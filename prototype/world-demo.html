@@ -1,0 +1,1545 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pino's World</title>
+<style>
+  /* Pino's style tokens. He changes these himself (see the Style tab). */
+  :root { --cream:#fff4d6; --ink:#1a1040; --accent:#4b47d6; --soft:#c9c2ff; --pop:#ff8fd8; --sun:#ffd23f; --mint:#7ff0c6;
+          --r:18px; --bw:2.5px; --sh:4px; --tilt:-1.2deg; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1a2a; font-family: ui-rounded, "Nunito", "Segoe UI", system-ui, sans-serif; color: var(--ink); font-size: 13px; }
+  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .card { background: var(--cream); border: var(--bw) solid var(--ink); border-radius: var(--r); box-shadow: var(--sh) var(--sh) 0 var(--ink); }
+  .chip { border: 2px solid var(--ink); border-radius: 999px; background: var(--soft); padding: 3px 10px; font-weight: 800; }
+  .chip:hover, .chip.on { background: var(--sun); }
+
+  #pinoCard { position: fixed; top: 14px; left: 14px; width: 250px; padding: 12px; }
+  #pinoCard header { display: flex; gap: 10px; align-items: center; }
+  #ava { width: 46px; height: 46px; flex: none; border-radius: 50%; border: var(--bw) solid var(--ink); background: radial-gradient(circle at 35% 35%, var(--soft), var(--accent)); display: grid; place-items: center; font-size: 22px; transform: rotate(var(--tilt)); }
+  #pinoCard h1 { margin: 0; font-size: 17px; font-weight: 900; }
+  #statusText { margin: 2px 0 0; line-height: 1.25; min-height: 2.5em; }
+  #drives { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin: 10px 0; }
+  .drive { font-size: 11px; font-weight: 800; }
+  .bar { height: 8px; border: 2px solid var(--ink); border-radius: 6px; background: #fff; margin-top: 2px; overflow: hidden; }
+  .bar i { display: block; height: 100%; transition: width .4s; }
+  #pinoCard footer { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  #goal { font-size: 11px; opacity: .8; }
+
+  #clock { position: fixed; top: 14px; right: 74px; padding: 7px 14px; font-weight: 900; font-size: 14px; transform: rotate(calc(var(--tilt) * -1)); }
+  #rail { position: fixed; top: 14px; right: 14px; display: grid; gap: 6px; padding: 6px; }
+  #rail button { width: 38px; height: 38px; border: 2px solid transparent; border-radius: calc(var(--r) * .6); background: none; font-size: 19px; }
+  #rail button:hover { background: var(--soft); }
+  #rail button.on { background: var(--accent); border-color: var(--ink); }
+  #drawer { position: fixed; top: 62px; right: 74px; width: 320px; max-width: calc(100vw - 96px); max-height: calc(100vh - 150px); display: flex; flex-direction: column; overflow: hidden; }
+  #drawer[hidden] { display: none; }
+  #drawer > header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--accent); color: #fff; border-bottom: var(--bw) solid var(--ink); }
+  #drawer h2 { margin: 0; font-size: 15px; }
+  #drawer > header button { border: 0; background: none; color: #fff; font-size: 15px; }
+  .tab { padding: 12px 14px; overflow-y: auto; display: grid; gap: 9px; }
+  .tab[hidden] { display: none; }
+  .tab h3 { margin: 6px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; opacity: .65; }
+  .row { display: flex; gap: 8px; align-items: flex-start; line-height: 1.3; }
+  .row > b:first-child { flex: none; width: 20px; text-align: center; }
+  .row small { display: block; opacity: .7; }
+  .tags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .tag { border: 2px solid var(--ink); border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 800; background: #fff; }
+  .note { font-size: 11px; opacity: .7; border-left: 3px solid var(--pop); padding-left: 8px; }
+  .news { border: 2px solid var(--ink); border-radius: calc(var(--r) * .6); padding: 7px 9px; background: #fff; }
+  .news.unread { opacity: .55; }
+  .news q { display: block; margin-top: 4px; color: var(--accent); font-weight: 700; quotes: "“" "”"; }
+  .sw { display: flex; gap: 4px; } .sw i { width: 24px; height: 24px; border: 2px solid var(--ink); border-radius: 6px; }
+  #preview { padding: 10px; display: grid; gap: 8px; justify-items: start; }
+  #preview button { background: var(--accent); color: #fff; border: var(--bw) solid var(--ink); border-radius: var(--r); box-shadow: var(--sh) var(--sh) 0 var(--ink); padding: 6px 14px; font-weight: 900; transform: rotate(var(--tilt)); }
+  .tab label { display: grid; gap: 3px; font-weight: 800; }
+  .tab label.chk { grid-template-columns: auto 1fr; align-items: center; gap: 8px; }
+  .tab input[type=range], .tab select { width: 100%; accent-color: var(--accent); }
+  .tab .v { font-weight: 400; opacity: .7; }
+  .btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+  .btns button { border: 2px solid var(--ink); border-radius: 10px; padding: 5px 0; font-weight: 800; background: var(--soft); }
+  .btns button:hover { background: var(--sun); }
+
+  #hotbar { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; }
+  .slot { position: relative; width: 46px; height: 46px; border: 2px solid var(--ink); border-radius: calc(var(--r) * .55); background: #fff; display: grid; place-items: center; font-size: 22px; }
+  .slot.empty { opacity: .35; } .slot.tool { background: var(--mint); }
+  .slot b { position: absolute; right: -6px; bottom: -6px; min-width: 18px; padding: 0 4px; border: 2px solid var(--ink); border-radius: 999px; background: var(--sun); font-size: 11px; text-align: center; }
+  .slot.bump { animation: bump .3s; }
+  @keyframes bump { 50% { transform: scale(1.25) rotate(-6deg); } }
+  #hint { position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%); color: #fff; font-weight: 800; text-shadow: 0 2px 0 var(--ink); pointer-events: none; white-space: nowrap; opacity: .9; }
+
+  #feed { position: fixed; left: 14px; bottom: 14px; width: 270px; display: flex; flex-direction: column-reverse; gap: 6px; pointer-events: none; }
+  .toast { padding: 6px 10px; font-weight: 700; line-height: 1.25; border-radius: calc(var(--r) * .7); animation: pop .25s; }
+  .toast.out { opacity: 0; transition: opacity .6s; }
+  @keyframes pop { from { transform: translateX(-20px) scale(.9); opacity: 0; } }
+
+  #tip { position: fixed; pointer-events: none; padding: 5px 10px; font-weight: 800; max-width: 240px; border-radius: calc(var(--r) * .6); z-index: 5; }
+  #tip small { display: block; font-weight: 500; opacity: .75; }
+  #menu { position: fixed; padding: 6px; display: grid; gap: 4px; min-width: 190px; z-index: 6; }
+  #menu h4 { margin: 2px 6px 4px; font-size: 13px; }
+  #menu button { display: flex; gap: 8px; align-items: center; text-align: left; border: 2px solid transparent; border-radius: calc(var(--r) * .5); background: none; padding: 5px 8px; font-weight: 800; }
+  #menu button:hover:not(:disabled) { background: var(--soft); border-color: var(--ink); }
+  #menu button:disabled { opacity: .5; cursor: not-allowed; }
+  #menu small { font-weight: 500; opacity: .8; display: block; }
+  #bubble { position: fixed; pointer-events: none; transform: translate(-50%, -100%); font-size: 20px; padding: 5px 10px; border-radius: 22px; }
+  #code { position: fixed; left: 14px; top: 250px; width: 300px; margin: 0; padding: 10px 12px; font: 11px/1.45 ui-monospace, Consolas, monospace; white-space: pre-wrap; background: var(--ink); color: var(--mint); border-color: var(--mint); max-height: 46vh; overflow: hidden; }
+  .float { position: fixed; pointer-events: none; font-weight: 900; font-size: 16px; color: #fff; text-shadow: 0 2px 0 var(--ink), 0 0 6px var(--ink); animation: rise 1.3s ease-out forwards; z-index: 4; }
+  @keyframes rise { to { transform: translateY(-60px); opacity: 0; } }
+  [hidden] { display: none !important; }
+  @media (max-width: 700px) {
+    #pinoCard { width: 190px; padding: 8px; } #drives { grid-template-columns: 1fr; } #clock { top: auto; bottom: 76px; right: 14px; }
+    #drawer { right: 14px; top: 250px; max-width: calc(100vw - 28px); } #feed, #hint { display: none; } #code { top: auto; bottom: 76px; }
+  }
+</style>
+</head>
+<body>
+<section id="pinoCard" class="card">
+  <header><div id="ava">🥝</div><div><h1>Pino <span id="mood">🙂</span></h1><p id="statusText">Pino is waking up</p></div></header>
+  <div id="drives"></div>
+  <footer><button id="follow" class="chip">🎥 Follow</button><span id="goal"></span></footer>
+</section>
+<div id="clock" class="card">☀️ 08:00 · Day 1</div>
+<nav id="rail" class="card">
+  <button data-tab="mind" title="Mind: what Pino knows">🧠</button>
+  <button data-tab="journal" title="Journal">📓</button>
+  <button data-tab="news" title="News channel">📰</button>
+  <button data-tab="style" title="Pino's UI style">🎨</button>
+  <button data-tab="world" title="World settings">⚙️</button>
+</nav>
+<aside id="drawer" class="card" hidden>
+  <header><h2 id="dTitle"></h2><button id="dClose">✕</button></header>
+  <div class="tab" id="tab-mind" hidden></div>
+  <div class="tab" id="tab-journal" hidden></div>
+  <div class="tab" id="tab-news" hidden></div>
+  <div class="tab" id="tab-style" hidden></div>
+  <div class="tab" id="tab-world" hidden>
+    <label>Time of day <span class="v" id="vTod"></span><input id="tod" type="range" min="0" max="24" step="0.05" value="8"></label>
+    <div class="btns"><button data-h="6">Dawn</button><button data-h="12">Noon</button><button data-h="17.6">Sunset</button><button data-h="0.5">Night</button></div>
+    <label>Day length <select id="len"><option value="120">2 min</option><option value="300" selected>5 min</option><option value="900">15 min</option><option value="0">Paused</option></select></label>
+    <h3>Things outside Pino's control</h3>
+    <div class="btns"><button data-ev="rain">Rain</button><button data-ev="gust">Gust</button><button data-ev="balloon">Gift</button><button data-ev="star">Star</button></div>
+    <h3>Look</h3>
+    <label>Pixel size <span class="v" id="vPix"></span><input id="pix" type="range" min="1" max="6" step="1" value="2"></label>
+    <label>Colour levels <span class="v" id="vLev"></span><input id="lev" type="range" min="4" max="64" step="1" value="20"></label>
+    <label class="chk"><input id="dit" type="checkbox" checked> Ordered dither</label>
+    <label>God rays <span class="v" id="vRay"></span><input id="ray" type="range" min="0" max="3" step="0.05" value="1"></label>
+    <label>Glow <span class="v" id="vBlo"></span><input id="blo" type="range" min="0" max="2" step="0.05" value="1"></label>
+    <label>Saturation <span class="v" id="vSat"></span><input id="sat" type="range" min="0.6" max="2" step="0.05" value="1.25"></label>
+    <label>Wind <span class="v" id="vWin"></span><input id="win" type="range" min="0" max="2.5" step="0.05" value="1"></label>
+  </div>
+</aside>
+<div id="hotbar" class="card"></div>
+<div id="hint">Hover and click anything · drag to look around · scroll to zoom</div>
+<div id="feed"></div>
+<div id="tip" class="card" hidden></div>
+<div id="menu" class="card" hidden></div>
+<div id="bubble" class="card">🌱</div>
+<pre id="code" class="card" hidden></pre>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const MOBILE = matchMedia('(pointer: coarse)').matches || innerWidth < 700;
+const WATER_Y = -0.45;
+
+// ---------------------------------------------------------------- helpers
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp01 = x => Math.min(1, Math.max(0, x));
+const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+function hash2(x, y, s) { const h = Math.sin(x * 127.1 + y * 311.7 + s * 74.7) * 43758.5453; return h - Math.floor(h); }
+function vnoise(x, y, s = 0) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash2(xi, yi, s), b = hash2(xi + 1, yi, s), c = hash2(xi, yi + 1, s), d = hash2(xi + 1, yi + 1, s);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+function fbm(x, y, s = 0, o = 4) { let f = 0, amp = 0.5, fr = 1; for (let i = 0; i < o; i++) { f += amp * vnoise(x * fr, y * fr, s + i * 17); amp *= 0.5; fr *= 2; } return f / (1 - Math.pow(0.5, o)); }
+function distSeg(px, pz, ax, az, bx, bz) { const vx = bx - ax, vz = bz - az; const t = clamp01(((px - ax) * vx + (pz - az) * vz) / (vx * vx + vz * vz)); return Math.hypot(px - ax - vx * t, pz - az - vz * t); }
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const C = hex => new THREE.Color(hex);
+
+const GLSL_NOISE = `
+float hash21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3. - 2. * f);
+  return mix(mix(hash21(i), hash21(i + vec2(1., 0.)), u.x), mix(hash21(i + vec2(0., 1.)), hash21(i + vec2(1., 1.)), u.x), u.y); }
+float fbm(vec2 p){ float f = 0., a = .5; for (int i = 0; i < 5; i++) { f += a * vnoise(p); p *= 2.03; a *= .5; } return f / .97; }
+`;
+
+// shared uniforms, updated once per frame
+const U = {
+  uTime: { value: 0 }, uWind: { value: 1 }, uNight: { value: 0 },
+  uSun: { value: new THREE.Color() }, uAmb: { value: new THREE.Color() }, uLight: { value: new THREE.Color(1, 1, 1) },
+};
+function shaderMat({ uniforms = {}, shared = [], ...rest }) {
+  const m = new THREE.ShaderMaterial({ fog: true, uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, uniforms]), ...rest });
+  for (const k of shared) m.uniforms[k] = U[k];
+  return m;
+}
+
+// ---------------------------------------------------------------- renderer, scene, camera
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0xc4ecff, 0.01);
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 1000);
+camera.position.set(44, 30, 46);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 0); controls.enableDamping = true;
+controls.autoRotate = false;
+controls.minDistance = 6; controls.maxDistance = 170; controls.maxPolarAngle = Math.PI * 0.8;
+
+const hemi = new THREE.HemisphereLight(0xbfe6ff, 0x4f7a3a, 1.5);
+scene.add(hemi);
+const key = new THREE.DirectionalLight(0xffffff, 3);
+key.castShadow = true;
+key.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048);
+Object.assign(key.shadow.camera, { left: -46, right: 46, top: 46, bottom: -46, near: 1, far: 220 });
+key.shadow.bias = -0.0005; key.shadow.normalBias = 0.04;
+scene.add(key, key.target);
+
+// ---------------------------------------------------------------- sky (gradient, clouds, cloud sea, sun, moon, stars, aurora)
+const SKY = {
+  uTop: { value: new THREE.Color() }, uHor: { value: new THREE.Color() }, uVoid: { value: new THREE.Color() },
+  uCloud: { value: new THREE.Color() }, uSunCol: { value: new THREE.Color() },
+  uSunDir: { value: new THREE.Vector3() }, uMoonDir: { value: new THREE.Vector3() },
+  uStars: { value: 0 }, uAurora: { value: 0 }, uTime: U.uTime,
+};
+const sky = new THREE.Mesh(new THREE.SphereGeometry(400, 48, 24), new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, depthTest: false, uniforms: SKY,
+  vertexShader: `varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
+  fragmentShader: `
+    uniform vec3 uTop, uHor, uVoid, uCloud, uSunCol, uSunDir, uMoonDir; uniform float uStars, uAurora, uTime;
+    varying vec3 vDir;
+    ${GLSL_NOISE}
+    float hash31(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+    void main(){
+      vec3 d = normalize(vDir); float h = d.y;
+      vec3 col = h >= 0. ? mix(uHor, uTop, pow(clamp(h, 0., 1.), .55)) : mix(uHor, uVoid, smoothstep(0., .3, -h));
+      if (h > 0.) {
+        vec2 uv = d.xz / (h + .12) * .9 + vec2(uTime * .004, uTime * .002);
+        float c = smoothstep(.5, .8, fbm(uv * 1.2));
+        col = mix(col, uCloud, c * .85 * smoothstep(0., .25, h));
+      } else {
+        vec2 uv = d.xz / (-h + .06) * .6 + vec2(uTime * .003, 0.);
+        col = mix(col, uCloud, smoothstep(.35, .85, fbm(uv)) * .6 * smoothstep(0., .15, -h));
+      }
+      float sd = max(dot(d, uSunDir), 0.);
+      col += uSunCol * (pow(sd, 1500.) * 30. + pow(sd, 40.) * .6 + pow(sd, 6.) * .25);
+      float md = max(dot(d, uMoonDir), 0.);
+      col += vec3(.75, .85, 1.) * (smoothstep(.9995, .9997, md) * 3. + pow(md, 60.) * .15) * uStars;
+      float s = hash31(floor(d * 220.));
+      col += step(.997, s) * uStars * smoothstep(-.05, .25, h) * (.6 + .4 * sin(uTime * 2. + s * 500.)) * 1.5;
+      if (uAurora > .01 && h > 0.) {
+        vec2 uv = d.xz / (h + .25); float t = uTime * .05;
+        float n = fbm(vec2(uv.x * .6 + t, uv.y * .6 - t * .5));
+        float y = uv.y + (n - .5) * 1.6;
+        float band = exp(-pow((y - .4) * 2.2, 2.)) + .6 * exp(-pow((y + .6) * 2.8, 2.));
+        float streak = .55 + .45 * vnoise(vec2(uv.x * 9. + n * 3., t * 4.));
+        vec3 aur = mix(vec3(.1, 1., .45), vec3(.35, .3, 1.), smoothstep(.2, .9, h + n * .3));
+        col += aur * band * streak * smoothstep(.05, .45, h) * uAurora * 1.2;
+      }
+      gl_FragColor = vec4(col, 1.);
+    }`,
+}));
+sky.renderOrder = -1; sky.frustumCulled = false;
+scene.add(sky);
+
+// ---------------------------------------------------------------- materials
+const GRASS_DARK = C('#3f8a2a'), GRASS_LIGHT = C('#8cc63f'), GRASS_TIP = C('#d2ec6e'), SAND = C('#d9c08a');
+const tintAt = (x, z) => 0.5 + 0.5 * Math.sin(x * 0.21 + 1.3) * Math.sin(z * 0.17 + 0.4);
+
+const grassMat = shaderMat({
+  shared: ['uTime', 'uWind', 'uSun', 'uAmb'], side: THREE.DoubleSide,
+  uniforms: { uDark: { value: GRASS_DARK }, uLightG: { value: GRASS_LIGHT }, uTip: { value: GRASS_TIP } },
+  vertexShader: `
+    uniform float uTime, uWind;
+    varying float vH; varying float vTint;
+    #include <fog_pars_vertex>
+    void main(){
+      vec4 base = modelMatrix * instanceMatrix * vec4(0., 0., 0., 1.);
+      vec4 world = modelMatrix * instanceMatrix * vec4(position, 1.);
+      float h = uv.y;
+      float w = sin(uTime * 1.6 + base.x * .35 + base.z * .22) * .6 + sin(uTime * 3.3 + base.x * 1.7 + base.z * .9) * .2;
+      world.x += w * uWind * .2 * h * h;
+      world.z += w * uWind * .1 * h * h;
+      vH = h;
+      vTint = .5 + .5 * sin(base.x * .21 + 1.3) * sin(base.z * .17 + .4);
+      vec4 mvPosition = viewMatrix * world;
+      gl_Position = projectionMatrix * mvPosition;
+      #include <fog_vertex>
+    }`,
+  fragmentShader: `
+    uniform vec3 uSun, uAmb, uDark, uLightG, uTip;
+    varying float vH; varying float vTint;
+    #include <fog_pars_fragment>
+    void main(){
+      vec3 albedo = mix(mix(uDark, uLightG, vTint), uTip, vH * vH);
+      vec3 col = albedo * (uSun * (.55 + .45 * vH) + uAmb) * .3183;
+      col *= mix(.45, 1., vH);
+      gl_FragColor = vec4(col, 1.);
+      #include <fog_fragment>
+    }`,
+});
+
+function swayTrees(mat) {
+  mat.onBeforeCompile = s => {
+    s.uniforms.uTime = U.uTime; s.uniforms.uWind = U.uWind;
+    s.vertexShader = 'uniform float uTime; uniform float uWind;\n' + s.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      float ph = modelMatrix[3].x * .3 + modelMatrix[3].z * .2;
+      float k = max(position.y, 0.) * .15;
+      transformed.x += sin(uTime * 1.2 + ph) * .12 * k * k * uWind;
+      transformed.z += cos(uTime * .9 + ph) * .08 * k * k * uWind;`);
+  };
+  return mat;
+}
+const terrainMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+const rockMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide });
+const treeMat = swayTrees(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+const bushMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+const flowerMats = [];
+
+const waterMat = shaderMat({
+  shared: ['uTime', 'uNight', 'uLight'], transparent: true, depthWrite: false, side: THREE.DoubleSide,
+  vertexShader: `
+    attribute float aDepth; varying float vDepth; varying vec3 vW;
+    #include <fog_pars_vertex>
+    void main(){
+      vDepth = aDepth;
+      vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz;
+      vec4 mvPosition = viewMatrix * w;
+      gl_Position = projectionMatrix * mvPosition;
+      #include <fog_vertex>
+    }`,
+  fragmentShader: `
+    uniform float uTime, uNight; uniform vec3 uLight;
+    varying float vDepth; varying vec3 vW;
+    #include <fog_pars_fragment>
+    ${GLSL_NOISE}
+    void main(){
+      if (vDepth < -.05) discard;
+      vec2 p = vW.xz;
+      float n = vnoise(p * 1.6 + vec2(uTime * .35, uTime * .2)) * vnoise(p * 2.4 - uTime * .3);
+      float sparkle = smoothstep(.32, .46, n);
+      vec3 col = mix(vec3(.08, .42, .70), vec3(.02, .10, .32), smoothstep(0., .6, vDepth));
+      col = col * uLight * 2.2 + sparkle * uLight * vec3(1., .95, .8) * 1.6;
+      float rim = 1. - smoothstep(0., .18, vDepth);
+      col += vec3(.2, 1., .55) * rim * (.15 + uNight * 2.2);
+      gl_FragColor = vec4(col, .9);
+      #include <fog_fragment>
+    }`,
+});
+function flowMat(fall) {
+  return shaderMat({
+    shared: ['uTime', 'uLight'], transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    uniforms: { uFall: { value: fall ? 1 : 0 } },
+    vertexShader: `
+      varying vec2 vUv;
+      #include <fog_pars_vertex>
+      void main(){ vUv = uv; vec4 mvPosition = modelViewMatrix * vec4(position, 1.); gl_Position = projectionMatrix * mvPosition;
+      #include <fog_vertex>
+      }`,
+    fragmentShader: `
+      uniform float uTime, uFall; uniform vec3 uLight;
+      varying vec2 vUv;
+      #include <fog_pars_fragment>
+      ${GLSL_NOISE}
+      void main(){
+        float v = vUv.y;
+        float n = uFall > .5 ? vnoise(vec2(vUv.x * 6., v * 26. - uTime * 3.5)) : vnoise(vec2(vUv.x * 4., v * 9. - uTime * 1.6));
+        float streak = smoothstep(.4, .75, n);
+        vec3 col = mix(vec3(.15, .5, .95), vec3(.92, .97, 1.), clamp(streak * .85 + uFall * .25, 0., 1.));
+        float edge = smoothstep(0., .2, vUv.x) * (1. - smoothstep(.8, 1., vUv.x));
+        float fade = uFall > .5 ? 1. - smoothstep(.45, 1., v) : 1.;
+        gl_FragColor = vec4(col * uLight * 2.2, edge * fade * .92);
+        #include <fog_fragment>
+      }`,
+  });
+}
+const fireflyMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: { uTime: U.uTime, uNight: U.uNight, uSize: { value: 0.6 } },
+  vertexShader: `
+    uniform float uTime, uSize; attribute float aPhase; varying float vA;
+    void main(){
+      vec3 p = position;
+      p.y += sin(uTime * .8 + aPhase * 6.) * .4;
+      p.x += sin(uTime * .5 + aPhase * 11.) * .6;
+      p.z += cos(uTime * .6 + aPhase * 7.) * .6;
+      vec4 mv = modelViewMatrix * vec4(p, 1.);
+      gl_Position = projectionMatrix * mv;
+      gl_PointSize = uSize * (300. / -mv.z);
+      vA = .5 + .5 * sin(uTime * 3. + aPhase * 20.);
+    }`,
+  fragmentShader: `
+    uniform float uNight; varying float vA;
+    void main(){
+      float d = length(gl_PointCoord - .5);
+      float a = 1. - smoothstep(0., .5, d);
+      gl_FragColor = vec4(vec3(.55, 1., .5) * uNight * 3. * vA * a, a);
+    }`,
+});
+
+// ---------------------------------------------------------------- recipes (Pino-style)
+const PAL = {
+  navy: '#1a1040', indigo: '#2d2a8c', violet: '#4b47d6', lavender: '#c9c2ff', white: '#ffffff',
+  yellow: '#ffd23f', wood: '#e9c79a', roof: '#e0369e', plum: '#7a2a8f',
+};
+const GEO = {
+  box: () => new THREE.BoxGeometry(1, 1, 1), sphere: () => new THREE.SphereGeometry(1, 20, 14),
+  cylinder: () => new THREE.CylinderGeometry(1, 1, 1, 12), cone: () => new THREE.ConeGeometry(1, 1, 16),
+  pyramid: () => new THREE.ConeGeometry(1, 1, 4),
+};
+const GLOWS = [];
+function build(recipe) {
+  const g = new THREE.Group();
+  for (const p of recipe.parts) {
+    const color = C(PAL[p.color] || PAL.violet);
+    const mat = p.glow ? new THREE.MeshBasicMaterial({ color }) : new THREE.MeshLambertMaterial({ color });
+    if (p.glow) { mat.userData.base = color.clone(); GLOWS.push(mat); }
+    const m = new THREE.Mesh(GEO[p.shape](), mat);
+    m.position.fromArray(p.pos || [0, 0, 0]);
+    m.rotation.set(...(p.rot || [0, 0, 0]).map(THREE.MathUtils.degToRad));
+    m.scale.fromArray(p.scale || [1, 1, 1]);
+    m.castShadow = !p.glow; m.receiveShadow = true;
+    g.add(m);
+  }
+  return g;
+}
+const KIWI = { parts: [
+  { shape: 'sphere', pos: [0, 0.65, 0], scale: [0.5, 0.55, 0.42], color: 'violet' },
+  { shape: 'sphere', pos: [0.32, 1.05, 0], scale: [0.26, 0.26, 0.24], color: 'violet' },
+  { shape: 'cone', pos: [0.86, 0.98, 0], rot: [0, 0, -100], scale: [0.045, 0.6, 0.045], color: 'lavender' },
+  { shape: 'sphere', pos: [0.47, 1.12, 0.16], scale: [0.05, 0.05, 0.05], color: 'navy' },
+  { shape: 'sphere', pos: [0.47, 1.12, -0.16], scale: [0.05, 0.05, 0.05], color: 'navy' },
+  { shape: 'cylinder', pos: [0.05, 0.16, 0.12], scale: [0.035, 0.32, 0.035], color: 'indigo' },
+  { shape: 'cylinder', pos: [0.05, 0.16, -0.12], scale: [0.035, 0.32, 0.035], color: 'indigo' },
+]};
+const HUT = { parts: [
+  { shape: 'box', pos: [0, 0.9, 0], scale: [2.4, 1.8, 2.0], color: 'wood' },
+  { shape: 'pyramid', pos: [0, 2.45, 0], rot: [0, 45, 0], scale: [2.2, 1.3, 2.2], color: 'roof' },
+  { shape: 'box', pos: [0, 0.6, 1.01], scale: [0.6, 1.2, 0.05], color: 'navy' },
+  { shape: 'box', pos: [0.78, 1.15, 1.01], scale: [0.45, 0.45, 0.05], color: 'yellow', glow: true },
+  { shape: 'box', pos: [-1.21, 1.15, 0], scale: [0.05, 0.45, 0.45], color: 'yellow', glow: true },
+  { shape: 'box', pos: [0.7, 2.7, -0.4], scale: [0.3, 0.8, 0.3], color: 'plum' },
+]};
+const LANTERN = { parts: [
+  { shape: 'cylinder', pos: [0, 0.8, 0], scale: [0.06, 1.6, 0.06], color: 'navy' },
+  { shape: 'box', pos: [0, 1.7, 0], scale: [0.26, 0.3, 0.26], color: 'yellow', glow: true },
+  { shape: 'pyramid', pos: [0, 1.95, 0], rot: [0, 45, 0], scale: [0.25, 0.2, 0.25], color: 'navy' },
+]};
+
+// ---------------------------------------------------------------- island generator
+function vertexColorsFor(geo, fn) {
+  const pos = geo.attributes.position, cols = new Float32Array(pos.count * 3), c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) { fn(c, pos.getX(i), pos.getY(i), pos.getZ(i)); cols.set([c.r, c.g, c.b], i * 3); }
+  geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+}
+function cypressGeo(H, Rw, s) {
+  const pts = [];
+  for (let i = 0; i <= 10; i++) { const t = i / 10; pts.push(new THREE.Vector2(Math.max(Rw * Math.pow(1 - t, 0.85) * smooth(0, 0.14, t), 0.001), t * H)); }
+  const g = new THREE.LatheGeometry(pts, 7), pos = g.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const j = 1 + 0.35 * (vnoise(pos.getX(i) * 2 + s, pos.getY(i) * 1.3 + pos.getZ(i), 3) - 0.5);
+    pos.setX(i, pos.getX(i) * j); pos.setZ(i, pos.getZ(i) * j);
+  }
+  const lo = C('#1d5236'), hi = C(s % 3 < 1 ? '#7ab84a' : '#5aa04a');
+  vertexColorsFor(g, (c, x, y) => c.lerpColors(lo, hi, Math.pow(y / H, 0.8)));
+  g.computeVertexNormals();
+  return g;
+}
+function blobGeo(detail, amp, s, lo, hi) {
+  const g = new THREE.IcosahedronGeometry(1, detail), pos = g.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i); v.multiplyScalar(1 + amp * (vnoise(v.x * 1.7 + s, v.y * 1.7 + v.z, s) - 0.5)); pos.setXYZ(i, v.x, v.y, v.z); }
+  vertexColorsFor(g, (c, x, y) => c.lerpColors(C(lo), C(hi), smooth(-1, 1, y)));
+  g.computeVertexNormals();
+  return g;
+}
+const bladeGeo = (() => {
+  const w = 0.09, lv = [[0, 1], [0.4, 0.75], [0.75, 0.4]], pos = [], uv = [], idx = [];
+  lv.forEach(([y, k]) => { pos.push(-w * k / 2, y, 0.15 * y * y, w * k / 2, y, 0.15 * y * y); uv.push(0, y, 1, y); });
+  pos.push(0, 1, 0.15); uv.push(0.5, 1);
+  idx.push(0, 1, 2, 1, 3, 2, 2, 3, 4, 3, 5, 4, 4, 5, 6);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  return g;
+})();
+function ribbon(rows) {
+  const pos = [], uv = [], idx = [];
+  rows.forEach((r, i) => {
+    pos.push(r.p.x - r.side.x, r.p.y - r.side.y, r.p.z - r.side.z, r.p.x + r.side.x, r.p.y + r.side.y, r.p.z + r.side.z);
+    uv.push(0, r.v, 1, r.v);
+    if (i) { const a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  return g;
+}
+
+function makeIsland(o) {
+  const { R, depth, seed, hills = 1, x: ox = 0, y: oy = 0, z: oz = 0, pond = null, mound = null, trees = 10, treeBias = null } = o;
+  const r = rng(seed * 991 + 7);
+  const group = new THREE.Group(); group.position.set(ox, oy, oz);
+  const edgeR = th => R * (1 + 0.36 * (vnoise(Math.cos(th) * 1.7 + seed, Math.sin(th) * 1.7 - seed, seed) - 0.5));
+  let P = null;
+  if (pond) {
+    const th = pond.th, er = edgeR(th);
+    P = { r: pond.r, x: Math.cos(th) * er * 0.5, z: Math.sin(th) * er * 0.5, ex: Math.cos(th) * er, ez: Math.sin(th) * er, ux: Math.cos(th), uz: Math.sin(th) };
+  }
+  function height(x, z) {
+    const rr = Math.hypot(x, z), rn = Math.min(rr / edgeR(Math.atan2(z, x)), 1);
+    let h = 0.5 + hills * (fbm(x * 0.08 + seed, z * 0.08 - seed, seed) - 0.45) * 2.0 * (1 - rn ** 3) - 0.5 * rn ** 8;
+    if (mound) h += mound.h * Math.exp(-((x - mound.x) ** 2 + (z - mound.z) ** 2) / (mound.r ** 2)) * (1 - rn ** 4);
+    if (P) {
+      h = Math.min(h, lerp(WATER_Y - 0.75, h, smooth(P.r * 0.35, P.r + 1.1, Math.hypot(x - P.x, z - P.z))));
+      h = Math.min(h, lerp(WATER_Y - 0.3, h, smooth(0.3, 1.2, distSeg(x, z, P.x, P.z, P.ex, P.ez))));
+    }
+    return h;
+  }
+  const isWater = (x, z, pad = 0) => !!P && (Math.hypot(x - P.x, z - P.z) < P.r + pad || distSeg(x, z, P.x, P.z, P.ex, P.ez) < 0.6 + pad);
+  const randomPoint = (rnMin = 0, rnMax = 0.95) => { const th = r() * Math.PI * 2, rn = Math.sqrt(lerp(rnMin * rnMin, rnMax * rnMax, r())), rr = rn * edgeR(th); return [Math.cos(th) * rr, Math.sin(th) * rr, th, rn]; };
+
+  // top surface (polar grid)
+  const rings = Math.round(12 + R * 1.8), segs = Math.round(40 + R * 4.5);
+  const tp = [0, height(0, 0), 0];
+  for (let i = 1; i <= rings; i++) for (let j = 0; j < segs; j++) {
+    const th = j / segs * Math.PI * 2, rr = i / rings * edgeR(th), x = Math.cos(th) * rr, z = Math.sin(th) * rr;
+    tp.push(x, height(x, z), z);
+  }
+  const ti = [], id = (i, j) => 1 + (i - 1) * segs + (j % segs);
+  for (let j = 0; j < segs; j++) ti.push(0, id(1, j + 1), id(1, j));
+  for (let i = 1; i < rings; i++) for (let j = 0; j < segs; j++) ti.push(id(i, j), id(i, j + 1), id(i + 1, j), id(i, j + 1), id(i + 1, j + 1), id(i + 1, j));
+  const top = new THREE.BufferGeometry();
+  top.setAttribute('position', new THREE.Float32BufferAttribute(tp, 3)); top.setIndex(ti);
+  vertexColorsFor(top, (c, x, y, z) => {
+    c.lerpColors(GRASS_DARK, GRASS_LIGHT, tintAt(x + ox, z + oz)).multiplyScalar(0.8);
+    if (y < WATER_Y + 0.25) c.lerp(SAND, smooth(WATER_Y + 0.25, WATER_Y - 0.1, y));
+  });
+  top.computeVertexNormals();
+  const topMesh = new THREE.Mesh(top, terrainMat); topMesh.receiveShadow = true; group.add(topMesh);
+
+  // cliff underside (flat-shaded rock, jagged, tapering to a point)
+  const NB = 16, cp = [], ci = [];
+  for (let k = 0; k <= NB; k++) for (let j = 0; j < segs; j++) {
+    const th = j / segs * Math.PI * 2, er = edgeR(th), ex = Math.cos(th) * er, ez = Math.sin(th) * er, he = height(ex, ez);
+    if (k === 0) { cp.push(ex, he, ez); continue; }
+    const t = k / NB;
+    const rad = er * (k === 1 ? 0.97 : 1) * (1 - Math.pow(t, 1.5) * 0.98) * (1 + 0.3 * (vnoise(th * 3 + seed, t * 5, seed + 5) - 0.5));
+    const y = k === 1 ? he - 0.35 : lerp(he - 0.35, -depth, Math.pow(t, 1.25)) + (vnoise(th * 5 + seed, t * 6, seed + 9) - 0.5) * 0.9 * (1 - t);
+    cp.push(Math.cos(th) * rad, y, Math.sin(th) * rad);
+  }
+  for (let k = 0; k < NB; k++) for (let j = 0; j < segs; j++) {
+    const a = k * segs + j, b = k * segs + (j + 1) % segs, c2 = (k + 1) * segs + j, d = (k + 1) * segs + (j + 1) % segs;
+    ci.push(a, c2, b, b, c2, d);
+  }
+  const cliff = new THREE.BufferGeometry();
+  cliff.setAttribute('position', new THREE.Float32BufferAttribute(cp, 3)); cliff.setIndex(ci);
+  const dirt = C('#6a4a32'), rockHi = C('#8a8fb5'), rockLo = C('#2c2f55');
+  vertexColorsFor(cliff, (c, x, y) => {
+    const t = clamp01(-y / depth);
+    c.lerpColors(rockHi, rockLo, Math.pow(t, 0.7));
+    if (y > -0.7) c.lerp(dirt, 0.7);
+    c.multiplyScalar(0.85 + 0.3 * vnoise(x * 0.8, y * 0.8, seed));
+  });
+  cliff.computeVertexNormals();
+  const cliffMesh = new THREE.Mesh(cliff, rockMat); cliffMesh.castShadow = true; cliffMesh.receiveShadow = true; group.add(cliffMesh);
+
+  // reserved spots (hut etc.) so nothing grows on them
+  const reserved = [];
+  const free = (x, z, pad) => !isWater(x, z, pad) && reserved.every(([rx, rz, rr2]) => Math.hypot(x - rx, z - rz) > rr2 + pad);
+
+  // grass blades
+  const density = (MOBILE ? 9 : 26) * (R > 20 ? 0.62 : 1);
+  const count = Math.round(Math.PI * R * R * density);
+  const grass = new THREE.InstancedMesh(bladeGeo, grassMat, count);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), pv = new THREE.Vector3();
+  let n = 0;
+  for (let tries = 0; n < count && tries < count * 3; tries++) {
+    const [x, z] = randomPoint(0, 0.97);
+    if (isWater(x, z, 0.15)) continue;
+    const hgt = 0.35 + r() * 0.5 * (0.6 + fbm(x * 0.1 + 3, z * 0.1, seed));
+    e.set((r() - 0.5) * 0.3, r() * Math.PI * 2, (r() - 0.5) * 0.3); q.setFromEuler(e);
+    m4.compose(pv.set(x, height(x, z) - 0.03, z), q, sc.set(0.8 + r() * 0.6, hgt, 1));
+    grass.setMatrixAt(n++, m4);
+  }
+  grass.count = n; grass.frustumCulled = false;
+  group.add(grass);
+
+  // flowers in patches
+  const fp = [], fc = [], FLOWERS = ['#ff4a5a', '#ffd23f', '#ffffff', '#ff8fd8', '#ffffff'].map(C);
+  const fCount = Math.round(R * R * (MOBILE ? 2 : 4));
+  for (let tries = 0; fp.length / 3 < fCount && tries < fCount * 8; tries++) {
+    const [x, z] = randomPoint(0, 0.95);
+    if (fbm(x * 0.12 + 7, z * 0.12, seed + 3) < 0.55 || isWater(x, z, 0.3)) continue;
+    fp.push(x, height(x, z) + 0.35 + r() * 0.2, z);
+    const c = FLOWERS[Math.floor(r() * FLOWERS.length)]; fc.push(c.r, c.g, c.b);
+  }
+  const fg = new THREE.BufferGeometry();
+  fg.setAttribute('position', new THREE.Float32BufferAttribute(fp, 3)); fg.setAttribute('color', new THREE.Float32BufferAttribute(fc, 3));
+  const fm = new THREE.PointsMaterial({ size: 0.1, vertexColors: true, sizeAttenuation: true });
+  flowerMats.push(fm); group.add(new THREE.Points(fg, fm));
+
+  // trees, bushes, rocks
+  function addTrees() {
+    let placed = 0;
+    for (let tries = 0; placed < trees && tries < trees * 30; tries++) {
+      const [x, z, th, rn] = randomPoint(0.25, 0.93);
+      if (!free(x, z, 1.4)) continue;
+      if (treeBias && r() > 0.12 + 0.88 * Math.pow(0.5 + 0.5 * Math.cos(th - treeBias), 2)) continue;
+      const H = 3 + r() * 4 * (treeBias ? 0.5 + 0.5 * Math.cos(th - treeBias) : 0.6), Rw = 0.6 + r() * 0.55;
+      const t = new THREE.Mesh(cypressGeo(H, Rw, Math.floor(r() * 100)), treeMat);
+      t.position.set(x, height(x, z) - 0.1, z); t.rotation.y = r() * 6.28;
+      t.castShadow = true; t.receiveShadow = true; group.add(t); placed++;
+    }
+    for (let i = 0; i < trees * 0.8; i++) {
+      const [x, z] = randomPoint(0.2, 0.95);
+      if (!free(x, z, 0.9)) continue;
+      const s = 0.45 + r() * 0.6, b = new THREE.Mesh(blobGeo(1, 0.5, i + seed, '#2f6f2e', '#7cb648'), bushMat);
+      b.position.set(x, height(x, z) + s * 0.3, z); b.scale.set(s, s * 0.8, s);
+      b.castShadow = true; b.receiveShadow = true; group.add(b);
+    }
+    for (let i = 0; i < Math.max(2, trees * 0.3); i++) {
+      const [x, z] = mound && i < 6 ? [mound.x + (r() - 0.5) * 4, mound.z + (r() - 0.5) * 4] : randomPoint(0.3, 0.9);
+      if (!free(x, z, 0.6)) continue;
+      const s = 0.4 + r() * 0.9, k = new THREE.Mesh(blobGeo(0, 0.6, i * 3 + seed, '#4a4e7a', '#a9acd0'), rockMat);
+      k.position.set(x, height(x, z) + s * 0.2, z); k.scale.set(s, s * 0.7, s); k.rotation.y = r() * 6;
+      k.castShadow = true; k.receiveShadow = true; group.add(k);
+    }
+  }
+
+  // water: pond + channel + waterfall
+  if (P) {
+    const pg = new THREE.RingGeometry(0.01, P.r + 0.35, 48, 14); pg.rotateX(-Math.PI / 2);
+    const pos = pg.attributes.position, depthA = new Float32Array(pos.count);
+    for (let i = 0; i < pos.count; i++) depthA[i] = WATER_Y - height(pos.getX(i) + P.x, pos.getZ(i) + P.z);
+    pg.setAttribute('aDepth', new THREE.BufferAttribute(depthA, 1));
+    const pondMesh = new THREE.Mesh(pg, waterMat); pondMesh.position.set(P.x, WATER_Y, P.z); group.add(pondMesh);
+
+    const side = new THREE.Vector3(-P.uz, 0, P.ux);
+    const chRows = [];
+    for (let i = 0; i <= 10; i++) { const t = i / 10; chRows.push({ p: new THREE.Vector3(lerp(P.x, P.ex + P.ux * 0.25, t), WATER_Y + 0.03, lerp(P.z, P.ez + P.uz * 0.25, t)), side: side.clone().multiplyScalar(0.55), v: t }); }
+    group.add(new THREE.Mesh(ribbon(chRows), flowMat(false)));
+    const fRows = [];
+    for (let i = 0; i < 40; i++) {
+      const t = i / 39, out = 0.25 + 1.8 * Math.sqrt(t);
+      fRows.push({ p: new THREE.Vector3(P.ex + P.ux * out, WATER_Y + 0.03 - 28 * t * (0.4 + 0.6 * t), P.ez + P.uz * out), side: side.clone().multiplyScalar(0.55 + t * 1.3), v: t });
+    }
+    group.add(new THREE.Mesh(ribbon(fRows), flowMat(true)));
+  }
+
+  scene.add(group);
+  return { group, height, isWater, edgeR, randomPoint, reserved, addTrees, P, R, baseY: oy, phase: seed };
+}
+
+// ================================================================ WORLD: one big island, everything on it is an entity
+const $ = id => document.getElementById(id);
+Object.assign(PAL, { stone: '#a9acd0', dark: '#4a4e7a', bark: '#8a5a3a', cream: '#fff4d6', pink: '#ff8fd8', orange: '#ff8a3d', red: '#e8384f' });
+const ring = (n, rad, fn) => Array.from({ length: n }, (_, i) => fn(Math.cos(i / n * 6.283) * rad, Math.sin(i / n * 6.283) * rad, i));
+const AXE = { parts: [
+  { shape: 'cylinder', pos: [0, 0.45, 0], scale: [0.035, 0.9, 0.035], color: 'bark' },
+  { shape: 'box', pos: [0.13, 0.78, 0], scale: [0.3, 0.2, 0.06], color: 'stone' },
+  { shape: 'box', pos: [0.3, 0.78, 0], scale: [0.06, 0.26, 0.07], color: 'white' },
+]};
+const CAMPFIRE = { parts: [
+  ...ring(7, 0.55, (x, z) => ({ shape: 'sphere', pos: [x, 0.08, z], scale: [0.17, 0.12, 0.17], color: 'stone' })),
+  { shape: 'cylinder', pos: [0, 0.14, 0], rot: [0, 0, 80], scale: [0.07, 0.8, 0.07], color: 'bark' },
+  { shape: 'cylinder', pos: [0, 0.14, 0], rot: [80, 0, 0], scale: [0.07, 0.8, 0.07], color: 'bark' },
+]};
+const BENCH = { parts: [
+  { shape: 'cylinder', pos: [0, 0.3, 0], scale: [0.6, 0.6, 0.6], color: 'bark' },
+  { shape: 'cylinder', pos: [0, 0.63, 0], scale: [0.68, 0.07, 0.68], color: 'cream' },
+  { shape: 'box', pos: [0.2, 0.72, 0.1], rot: [0, 30, 0], scale: [0.3, 0.1, 0.16], color: 'violet' },
+]};
+const STUMP = { parts: [
+  { shape: 'cylinder', pos: [0, 0.2, 0], scale: [0.36, 0.4, 0.36], color: 'bark' },
+  { shape: 'cylinder', pos: [0, 0.41, 0], scale: [0.3, 0.03, 0.3], color: 'cream' },
+]};
+const BALLOON = { parts: [
+  { shape: 'sphere', pos: [0, 2.3, 0], scale: [0.6, 0.72, 0.6], color: 'pink' },
+  { shape: 'cylinder', pos: [0, 1.15, 0], scale: [0.012, 1.4, 0.012], color: 'navy' },
+  { shape: 'box', pos: [0, 0.3, 0], scale: [0.55, 0.45, 0.55], color: 'wood' },
+]};
+
+const main = makeIsland({ R: 34, depth: 38, seed: 4, hills: 1.25, pond: { th: 0.6, r: 4.2 }, mound: { x: -13, z: -15, h: 5, r: 8 }, trees: 0 });
+const POND = main.P;
+const rnOf = (x, z) => Math.hypot(x, z) / main.edgeR(Math.atan2(z, x));
+const ground = (x, z) => main.height(x, z);
+const rw = rng(4242);
+
+const ents = [], statics = [];
+let pickList = [], pickDirty = true;
+const HIT_GEO = new THREE.SphereGeometry(1, 6, 4), HIT_MAT = new THREE.MeshBasicMaterial();
+function hitProxy(obj, s, y = 0) { const h = new THREE.Mesh(HIT_GEO, HIT_MAT); h.visible = false; h.scale.setScalar(s); h.position.y = y; obj.add(h); }
+function spawn(kind, x, z, obj, extra = {}) {
+  const e = { kind, x, z, obj, alive: true, r: 0.6, ...extra };
+  obj.position.set(x, ground(x, z) + (extra.dy || 0), z);
+  obj.traverse(o => { o.userData.ent = e; });
+  main.group.add(obj); ents.push(e); pickDirty = true;
+  return e;
+}
+function mark(mesh, kind) { mesh.userData.ent = { kind, alive: true, obj: mesh }; statics.push(mesh); }
+mark(main.group.children[0], 'ground'); mark(main.group.children[1], 'cliff');
+main.group.children.forEach(c => {
+  if (c.material === waterMat) mark(c, 'pond');
+  else if (c.material?.uniforms?.uFall) mark(c, c.material.uniforms.uFall.value ? 'waterfall' : 'pond');
+});
+
+// --- factories
+const shade = m => { m.castShadow = true; m.receiveShadow = true; return m; };
+const TREE_GEOS = Array.from({ length: 10 }, (_, i) => cypressGeo(4 + (i % 5) * 0.9, 0.75 + (i % 3) * 0.25, i * 7 + 3));
+function addTree(x, z, grow = 1) {
+  const i = Math.floor(rw() * 10), m = shade(new THREE.Mesh(TREE_GEOS[i], treeMat));
+  m.rotation.y = rw() * 6.28; m.scale.setScalar(grow);
+  return spawn('tree', x, z, m, { hp: 3, dy: -0.1, r: 1.3, H: 4 + (i % 5) * 0.9 });
+}
+function addStump(x, z) { const s = build(STUMP); return spawn('stump', x, z, s, { regrow: 70, r: 0.7 }); }
+const BUSH_GEOS = [0, 1, 2, 3].map(i => blobGeo(1, 0.5, i * 5 + 1, '#2f6f2e', '#7cb648'));
+const berryGeo = new THREE.SphereGeometry(0.14, 8, 6), berryMat = new THREE.MeshLambertMaterial({ color: '#e0369e' });
+function addBush(x, z) {
+  const g = new THREE.Group(), s = 0.7 + rw() * 0.5, b = shade(new THREE.Mesh(BUSH_GEOS[Math.floor(rw() * 4)], bushMat));
+  b.scale.set(s, s * 0.8, s); b.position.y = s * 0.3; g.add(b);
+  const dots = [[0.82, 0.6, 0.45], [-0.6, 0.8, 0.6], [0.15, 1.0, -0.7]].map(([a, h, c]) => { const m = new THREE.Mesh(berryGeo, berryMat); m.position.set(a * s, h * s, c * s); g.add(m); return m; });
+  const e = spawn('bush', x, z, g, { berries: 3, dots, rip: 25, r: 1 });
+  return e;
+}
+const setBerries = e => e.dots.forEach((d, i) => { d.visible = i < e.berries; });
+const stemGeo = new THREE.CylinderGeometry(0.02, 0.025, 0.45, 5).translate(0, 0.22, 0), stemMat = new THREE.MeshLambertMaterial({ color: '#3f8a2a' });
+const headGeo = new THREE.IcosahedronGeometry(0.13, 0).scale(1, 0.6, 1).translate(0, 0.48, 0);
+const FLOWER_COLS = ['#ff4a5a', '#ffd23f', '#ffffff', '#ff8fd8', '#8a86f0'];
+const headMats = FLOWER_COLS.map(c => new THREE.MeshLambertMaterial({ color: c, flatShading: true }));
+function addFlower(x, z, ci = Math.floor(rw() * 5)) {
+  const g = new THREE.Group(); g.add(new THREE.Mesh(stemGeo, stemMat), new THREE.Mesh(headGeo, headMats[ci]));
+  g.rotation.set((rw() - 0.5) * 0.3, rw() * 6, (rw() - 0.5) * 0.3); g.scale.setScalar(1.5 + rw() * 0.7); hitProxy(g, 0.42, 0.3);
+  return spawn('flower', x, z, g, { ci, r: 0.35 });
+}
+const PEB_GEOS = [0, 1, 2].map(i => blobGeo(0, 0.6, i * 3 + 2, '#4a4e7a', '#a9acd0'));
+function addPebble(x, z) {
+  const m = shade(new THREE.Mesh(PEB_GEOS[Math.floor(rw() * 3)], rockMat)); m.scale.set(0.24, 0.16, 0.24); m.rotation.y = rw() * 6; hitProxy(m, 1.7);
+  return spawn('pebble', x, z, m, { dy: 0.06, r: 0.4 });
+}
+function addBoulder(x, z) {
+  const s = 1.1 + rw() * 1.1, m = shade(new THREE.Mesh(blobGeo(1, 0.5, Math.floor(rw() * 50), '#4a4e7a', '#a9acd0'), rockMat));
+  m.scale.set(s, s * 0.75, s); m.rotation.y = rw() * 6;
+  return spawn('boulder', x, z, m, { dy: s * 0.25, r: s * 1.1 });
+}
+const stickGeo = new THREE.CylinderGeometry(0.035, 0.03, 0.9, 5).rotateZ(Math.PI / 2), stickMat = new THREE.MeshLambertMaterial({ color: PAL.bark });
+function addStick(x, z) { const m = new THREE.Mesh(stickGeo, stickMat); m.rotation.y = rw() * 6; hitProxy(m, 0.45); return spawn('stick', x, z, m, { dy: 0.06, r: 0.5 }); }
+const flameMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 1.3, 0.25) });
+const fires = [];
+function addCampfire(x, z) {
+  const g = build(CAMPFIRE), f = new THREE.Mesh(GEO.cone(), flameMat); f.scale.set(0.26, 0.7, 0.26); f.position.y = 0.5; g.add(f);
+  const l = new THREE.PointLight(0xff8a3d, 0, 14, 1.6); l.position.y = 1; g.add(l);
+  const e = spawn('campfire', x, z, g, { flame: f, light: l, r: 0.9 }); fires.push(e); return e;
+}
+
+// --- scatter
+const taken = [];
+const freeAt = (x, z, pad) => !main.isWater(x, z, pad) && taken.every(([a, b, r]) => Math.hypot(x - a, z - b) > r + pad);
+function scatter(n, fn, { rn0 = 0.05, rn1 = 0.9, pad = 0.8, keep = pad, filter } = {}) {
+  for (let made = 0, i = 0; made < n && i < n * 40; i++) {
+    const [x, z, th, rn] = main.randomPoint(rn0, rn1);
+    if (!freeAt(x, z, pad) || (filter && !filter(x, z, th, rn))) continue;
+    fn(x, z); if (keep) taken.push([x, z, keep]); made++;
+  }
+}
+const hutPos = new THREE.Vector3(Math.cos(2.5) * 12, 0, Math.sin(2.5) * 12);
+const toCenter = new THREE.Vector3(-hutPos.x, 0, -hutPos.z).normalize(), sideways = new THREE.Vector3(toCenter.z, 0, -toCenter.x);
+const door = hutPos.clone().addScaledVector(toCenter, 2.3);
+const benchPos = hutPos.clone().addScaledVector(toCenter, 2.2).addScaledVector(sideways, 3.4);
+const firePos = hutPos.clone().addScaledVector(toCenter, 5.2).addScaledVector(sideways, -1.2);
+taken.push([hutPos.x, hutPos.z, 3.2], [door.x, door.z, 1.5], [benchPos.x, benchPos.z, 1.3], [firePos.x, firePos.z, 1.8]);
+
+const hut = build(HUT); hut.scale.setScalar(1.3); hut.rotation.y = Math.atan2(toCenter.x, toCenter.z);
+spawn('hut', hutPos.x, hutPos.z, hut, { dy: -0.05, r: 2.6 });
+const bench = spawn('bench', benchPos.x, benchPos.z, build(BENCH), { r: 0.9 });
+[[hutPos.x + toCenter.x * 3 + sideways.x * -2.2, hutPos.z + toCenter.z * 3 + sideways.z * -2.2], [POND.x - 5.5, POND.z + 1.5], [POND.ex * 0.82 + 2.4, POND.ez * 0.82 - 2], [2, -6], [-14, -6]]
+  .forEach(([x, z]) => { spawn('lantern', x, z, build(LANTERN), { r: 0.5 }); taken.push([x, z, 0.8]); });
+
+const forest = th => 0.5 + 0.5 * Math.cos(th + 2.2);
+scatter(120, addTree, { rn0: 0.2, rn1: 0.92, pad: 1.5, keep: 1.3, filter: (x, z, th) => rw() < 0.1 + 0.9 * forest(th) ** 2 });
+scatter(12, addBoulder, { rn0: 0.2, rn1: 0.88, pad: 1.6, keep: 2, filter: (x, z) => Math.hypot(x + 13, z + 15) < 9 || rw() < 0.12 });
+scatter(28, addBush, { rn0: 0.1, rn1: 0.9, pad: 1.1, keep: 1 });
+scatter(36, addPebble, { pad: 0.5, keep: 0.3 });
+scatter(16, addStick, { pad: 0.5, keep: 0.3, filter: (x, z, th) => forest(th) > 0.35 });
+scatter(130, addFlower, { pad: 0.4, keep: 0.25, filter: (x, z) => fbm(x * 0.09 + 7, z * 0.09, 9) > 0.5 });
+
+// far islands: pretty, visible, and out of reach
+const satellites = [
+  { R: 7, x: -62, y: -4, z: -24, seed: 11 }, { R: 5, x: 52, y: 6, z: -46, seed: 12 }, { R: 9, x: 54, y: -9, z: 44, seed: 13 },
+  { R: 4, x: -30, y: 9, z: 56, seed: 14 }, { R: 6, x: -70, y: -12, z: 30, seed: 15 }, { R: 4.5, x: 8, y: 12, z: -66, seed: 16 },
+].map(s => {
+  const i = makeIsland({ ...s, depth: s.R * 1.6, hills: 0.6, trees: Math.round(s.R * 1.1) }); i.addTrees();
+  const far = { kind: 'far', alive: true, obj: i.group, sat: i };
+  i.group.children.forEach(c => { if (c.isMesh && !c.isInstancedMesh) { c.userData.ent = far; statics.push(c); } });
+  return i;
+});
+
+// ---------------------------------------------------------------- life: fireflies, butterflies, birds, mist, rain, particles
+const DIM = [];   // unlit materials that must follow the daylight
+{
+  const p = [], ph = [], fr = rng(77);
+  for (let i = 0; i < 380; i++) { const [x, z] = main.randomPoint(0.05, 0.9); p.push(x, ground(x, z) + 0.5 + fr() * 2.2, z); ph.push(fr()); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); g.setAttribute('aPhase', new THREE.Float32BufferAttribute(ph, 1));
+  const pts = new THREE.Points(g, fireflyMat); pts.frustumCulled = false; main.group.add(pts);
+}
+const wingGeo = new THREE.BufferGeometry();
+wingGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0.09, 0.24, 0, 0.16, 0.2, 0, -0.12, 0, 0, 0.09, 0.2, 0, -0.12, 0, 0, -0.07], 3));
+function flyer(hex, s) {
+  const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({ color: hex, side: THREE.DoubleSide });
+  const a = new THREE.Mesh(wingGeo, m), b = new THREE.Mesh(wingGeo, m); b.scale.x = -1; g.add(a, b); g.scale.setScalar(s);
+  DIM.push({ m, base: C(hex) }); g.userData.wings = [a, b];
+  return g;
+}
+const butterflies = ['#ff8fd8', '#ffd23f', '#ffffff', '#ff8a3d', '#7ff0c6', '#ff8fd8', '#ffffff', '#ffd23f'].map((c, i) => {
+  const g = flyer(c, 1); const [x, z] = main.randomPoint(0.1, 0.8); g.position.set(x, ground(x, z) + 1, z); main.group.add(g);
+  return { g, tx: x, tz: z, ph: i * 1.7 };
+});
+const birds = [0, 1, 2, 3, 4, 5].map(i => { const g = flyer('#2d2a8c', 3.2); scene.add(g); return { g, rad: 30 + i * 5, h: 15 + (i % 3) * 4, sp: 0.16 + (i % 2) * 0.05, ph: i * 1.1 }; });
+
+const cloudTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+  const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,.5)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c);
+})();
+const cloudMat = new THREE.SpriteMaterial({ map: cloudTex, transparent: true, depthWrite: false, opacity: 0.45, fog: false });
+const clouds = [];
+{ const cr = rng(5); for (let i = 0; i < 26; i++) { const s = new THREE.Sprite(cloudMat); const a = cr() * 6.28, d = 20 + cr() * 90; s.position.set(Math.cos(a) * d, -14 - cr() * 16, Math.sin(a) * d); const k = 26 + cr() * 34; s.scale.set(k, k * 0.55, 1); s.userData.v = 0.3 + cr() * 0.6; clouds.push(s); scene.add(s); } }
+
+const rainMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, uniforms: { uTime: U.uTime, uLight: U.uLight, uRain: { value: 0 } },
+  vertexShader: `uniform float uTime; void main(){ vec3 p = position; p.y = mod(p.y - uTime * 22., 32.) - 2.; p.x += p.y * .12;
+    vec4 mv = modelViewMatrix * vec4(p, 1.); gl_Position = projectionMatrix * mv; gl_PointSize = 2.; }`,
+  fragmentShader: `uniform vec3 uLight; uniform float uRain; void main(){ gl_FragColor = vec4(vec3(.7, .85, 1.) * (uLight * 1.3 + .03), uRain * .45); }`,
+});
+{ const p = [], rr = rng(31); for (let i = 0; i < (MOBILE ? 900 : 2600); i++) p.push((rr() - 0.5) * 100, rr() * 32, (rr() - 0.5) * 100);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+  const pts = new THREE.Points(g, rainMat); pts.frustumCulled = false; scene.add(pts); }
+
+const PN = 260, pPos = new Float32Array(PN * 3).fill(-999), pCol = new Float32Array(PN * 3), pVel = new Float32Array(PN * 3), pLife = new Float32Array(PN);
+let pIdx = 0;
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+const pMat = new THREE.PointsMaterial({ size: 0.17, vertexColors: true }); flowerMats.push(pMat);
+{ const pts = new THREE.Points(pGeo, pMat); pts.frustumCulled = false; main.group.add(pts); }
+function burst(x, y, z, hex, n = 10, sp = 2.4, up = 3) {
+  const c = C(hex);
+  for (let k = 0; k < n; k++) {
+    const i = pIdx++ % PN, a = Math.random() * 6.283, s = Math.random() * sp;
+    pPos.set([x, y, z], i * 3); pVel.set([Math.cos(a) * s, up * (0.5 + Math.random()), Math.sin(a) * s], i * 3);
+    pCol.set([c.r, c.g, c.b], i * 3); pLife[i] = 0.6 + Math.random() * 0.6;
+  }
+  pGeo.attributes.color.needsUpdate = true;
+}
+function stepParticles(dt) {
+  for (let i = 0; i < PN; i++) {
+    if (pLife[i] <= 0) continue;
+    pLife[i] -= dt; pVel[i * 3 + 1] -= 9 * dt;
+    for (let k = 0; k < 3; k++) pPos[i * 3 + k] += pVel[i * 3 + k] * dt;
+    if (pLife[i] <= 0) pPos[i * 3 + 1] = -999;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+}
+const tweens = [];
+const tween = (dur, fn, done) => tweens.push({ t: 0, dur, fn, done });
+function stepTweens(dt) {
+  for (let i = tweens.length - 1; i >= 0; i--) { const w = tweens[i]; w.t += dt; const k = Math.min(1, w.t / w.dur); w.fn(k); if (k >= 1) { tweens.splice(i, 1); w.done?.(); } }
+}
+const _v = new THREE.Vector3();
+function toScreen(x, y, z) { _v.set(x, y, z); main.group.localToWorld(_v).project(camera); return [(_v.x + 1) / 2 * innerWidth, (1 - _v.y) / 2 * innerHeight, _v.z < 1]; }
+function floatText(x, y, z, text) {
+  const [sx, sy, ok] = toScreen(x, y, z); if (!ok) return;
+  const el = document.createElement('div'); el.className = 'float'; el.textContent = text; el.style.left = sx + 'px'; el.style.top = sy + 'px';
+  document.body.append(el); setTimeout(() => el.remove(), 1300);
+}
+
+// Pino himself, the ring that shows what the mouse is on, and the gift balloon
+const kiwi = build(KIWI); kiwi.scale.setScalar(1.3); hitProxy(kiwi, 0.9, 0.7);
+const PINO = { kind: 'pino', alive: true, obj: kiwi, r: 0.9 };
+kiwi.traverse(o => { o.userData.ent = PINO; }); main.group.add(kiwi); statics.push(kiwi);
+const axeModel = build(AXE); axeModel.position.set(-0.1, 0.35, 0.42); axeModel.rotation.set(0.5, 0, -0.3); axeModel.visible = false; kiwi.add(axeModel);
+const ringMesh = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.5, 2, 0.5), transparent: true, opacity: 0.9, depthTest: false }));
+ringMesh.visible = false; ringMesh.renderOrder = 5; main.group.add(ringMesh);
+const balloon = build(BALLOON); hitProxy(balloon, 1.1, 1.6); balloon.visible = false;
+const BALLOON_ENT = { kind: 'balloon', alive: false, obj: balloon, r: 0 };
+balloon.traverse(o => { o.userData.ent = BALLOON_ENT; }); main.group.add(balloon); statics.push(balloon);
+const star = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 6, 8), fog: false })); star.visible = false; scene.add(star);
+// ---------------------------------------------------------------- day / night keyframes (tod: 0 = midnight, .25 sunrise, .5 noon, .75 sunset)
+const COLOR_FIELDS = ['top', 'hor', 'void', 'cloud', 'fog', 'sun', 'hs', 'hg', 'tint'];
+const NUM_FIELDS = ['sunI', 'hI', 'stars', 'aurora', 'exp', 'rays', 'fogD'];
+const NIGHT = { top: '#020a14', hor: '#0c2b2c', void: '#04110f', cloud: '#0d2422', fog: '#08201e', sun: '#9fb8ff', sunI: 0.5, hs: '#1f6a58', hg: '#050b14', hI: 0.6, stars: 1, aurora: 1, exp: 1.7, rays: 0, tint: '#5fb8a8', fogD: 0.016 };
+const DAY = { top: '#1477e6', hor: '#7fd6ff', void: '#b4ecff', cloud: '#ffffff', fog: '#9fdcff', sun: '#fff4dc', sunI: 3.2, hs: '#bfe6ff', hg: '#4f7a3a', hI: 1.5, stars: 0, aurora: 0, exp: 1.0, rays: 1.0, tint: '#6aa8ff', fogD: 0.0075 };
+const KEYS = [
+  { t: 0.00, ...NIGHT },
+  { t: 0.20, ...NIGHT, stars: 0.8, aurora: 0.6 },
+  { t: 0.25, top: '#2b3c8c', hor: '#ff9a7a', void: '#d98a8a', cloud: '#ffc0a8', fog: '#e0a090', sun: '#ffb27a', sunI: 1.6, hs: '#ffb0a0', hg: '#3a2a4a', hI: 0.9, stars: 0.2, aurora: 0.1, exp: 1.25, rays: 1.2, tint: '#a080ff', fogD: 0.012 },
+  { t: 0.32, ...DAY },
+  { t: 0.66, ...DAY },
+  { t: 0.725, top: '#7a3a8a', hor: '#ffc46a', void: '#ff9a6a', cloud: '#ffb27a', fog: '#ff9e78', sun: '#ff9a4a', sunI: 2.6, hs: '#ff9a7a', hg: '#5a2548', hI: 1.1, stars: 0, aurora: 0, exp: 1.1, rays: 1.6, tint: '#c04080', fogD: 0.006 },
+  { t: 0.78, top: '#1c1446', hor: '#d0506a', void: '#4a1f4a', cloud: '#8a3a6a', fog: '#4a2448', sun: '#ff6a4a', sunI: 0.6, hs: '#6a3a8a', hg: '#140a20', hI: 0.7, stars: 0.4, aurora: 0.2, exp: 1.4, rays: 0.5, tint: '#8040c0', fogD: 0.014 },
+  { t: 0.84, ...NIGHT },
+  { t: 1.00, ...NIGHT },
+].map(k => ({ ...k, ...Object.fromEntries(COLOR_FIELDS.map(f => [f, C(k[f])])) }));
+const cur = {}; COLOR_FIELDS.forEach(f => cur[f] = new THREE.Color());
+function sampleKeys(tod) {
+  let i = 0; while (i < KEYS.length - 2 && KEYS[i + 1].t <= tod) i++;
+  const a = KEYS[i], b = KEYS[i + 1], f = smooth(0, 1, (tod - a.t) / (b.t - a.t));
+  COLOR_FIELDS.forEach(k => cur[k].lerpColors(a[k], b[k], f));
+  NUM_FIELDS.forEach(k => cur[k] = lerp(a[k], b[k], f));
+}
+
+// ---------------------------------------------------------------- post: low-res target, god rays, glow, tonemap, grade, dither
+let rt, pixelSize = 2;
+const post = new THREE.ShaderMaterial({
+  depthTest: false, depthWrite: false,
+  uniforms: {
+    tColor: { value: null }, tDepth: { value: null }, lowRes: { value: new THREE.Vector2() },
+    sunUV: { value: new THREE.Vector2() }, sunVis: { value: 0 }, rays: { value: 1 }, rayColor: { value: new THREE.Color() },
+    bloom: { value: 1 }, exposure: { value: 1 }, sat: { value: 1.25 }, tint: { value: new THREE.Vector3(1, 1, 1) },
+    vignette: { value: 0.35 }, levels: { value: 20 }, dither: { value: 1 },
+  },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
+  fragmentShader: `
+    uniform sampler2D tColor, tDepth; uniform vec2 lowRes, sunUV;
+    uniform float sunVis, rays, bloom, exposure, sat, vignette, levels, dither;
+    uniform vec3 rayColor, tint;
+    varying vec2 vUv;
+    float bayer2(vec2 a){ a = floor(a); return fract(a.x / 2. + a.y * a.y * .75); }
+    float bayer4(vec2 a){ return bayer2(.5 * a) * .25 + bayer2(a); }
+    float luma(vec3 c){ return dot(c, vec3(.2126, .7152, .0722)); }
+    vec3 aces(vec3 x){ return clamp((x * (2.51 * x + .03)) / (x * (2.43 * x + .59) + .14), 0., 1.); }
+    void main(){
+      vec2 px = floor(vUv * lowRes);
+      vec2 uv = (px + .5) / lowRes;
+      vec3 c = texture2D(tColor, uv).rgb;
+      if (sunVis > .001 && rays > .001) {
+        vec2 delta = (uv - sunUV) * (.85 / 40.);
+        vec2 co = uv; float decay = 1.; vec3 acc = vec3(0.);
+        for (int i = 0; i < 40; i++) {
+          co -= delta;
+          float skyPx = step(.99999, texture2D(tDepth, co).x);
+          vec3 s = texture2D(tColor, co).rgb; float L = luma(s);
+          acc += s / (1. + L) * min(max(L - .8, 0.), 3.) * skyPx * decay;
+          decay *= .965;
+        }
+        c += acc * (rays * sunVis / 40.) * rayColor * 1.6;
+      }
+      vec3 g = vec3(0.);
+      for (int i = 0; i < 8; i++) {
+        vec2 o = vec2(cos(float(i) * .7854), sin(float(i) * .7854)) / lowRes;
+        g += max(texture2D(tColor, uv + o * 2.).rgb - 1., 0.) * .6 + max(texture2D(tColor, uv + o * 5.).rgb - 1., 0.) * .4;
+      }
+      c += g * (bloom / 8.);
+      c = aces(c * exposure);
+      c = pow(c, vec3(1. / 2.2));
+      float l = luma(c);
+      c = mix(vec3(l), c, sat);
+      c = mix(c * tint, c, smoothstep(0., .55, l) * .6 + .4);
+      c *= 1. - vignette * pow(length(vUv - .5) * 1.35, 2.5);
+      if (levels < 63.5) c = floor(c * levels + .5 + (bayer4(px) - .5) * dither) / levels;
+      gl_FragColor = vec4(clamp(c, 0., 1.), 1.);
+    }`,
+});
+const postScene = new THREE.Scene(); postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post));
+const postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+function makeTarget() {
+  rt?.dispose(); rt?.depthTexture?.dispose();
+  const w = Math.max(1, Math.floor(innerWidth / pixelSize)), h = Math.max(1, Math.floor(innerHeight / pixelSize));
+  rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+  rt.depthTexture = new THREE.DepthTexture(w, h);
+  post.uniforms.tColor.value = rt.texture; post.uniforms.tDepth.value = rt.depthTexture; post.uniforms.lowRes.value.set(w, h);
+  fireflyMat.uniforms.uSize.value = 1.2 / pixelSize;
+}
+makeTarget();
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); makeTarget(); });
+
+// ================================================================ GAME STATE
+let tod = 8 / 24, dayLength = 300, day = 1, rain = 0, gust = 0, follow = false, openTab = null;
+function clockText(t) {
+  const m = Math.floor(t * 1440), time = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  const ph = t >= 0.21 && t < 0.29 ? ['🌅', 'Dawn'] : t >= 0.29 && t < 0.70 ? ['☀️', 'Day'] : t >= 0.70 && t < 0.765 ? ['🌇', 'Golden hour'] : t >= 0.765 && t < 0.83 ? ['🌆', 'Dusk'] : ['🌙', 'Night'];
+  return { time, icon: ph[0], phase: ph[1] };
+}
+const isNight = () => U.uNight.value > 0.6;
+
+const ITEMS = { wood: ['🪵', 'Wood'], stone: ['🪨', 'Stone'], stick: ['🌿', 'Stick'], berry: ['🫐', 'Berries'], flower: ['🌸', 'Flower'] };
+const inv = { wood: 0, stone: 0, stick: 0, berry: 0, flower: 0 };
+const tools = {};   // id -> behaviour definition. Empty until Pino invents something.
+// What Pino "writes" when he invents a thing: a 3D recipe plus a small behaviour definition the world then obeys.
+const INVENT = {
+  axe: { icon: '🪓', name: 'Axe', idea: 'Something sharp and heavy, on a stick…', needs: { stick: 1, stone: 1 }, recipe: AXE,
+    def: { verb: 'chop', target: 'tree', damage: 1, swing: 0.7, yields: { wood: 3, stick: 1 } } },
+  campfire: { icon: '🔥', name: 'Campfire', idea: 'Wood burns. Stones keep the fire in one place…', needs: { wood: 2, stone: 2 }, recipe: CAMPFIRE,
+    def: { verb: 'place', on: 'ground', cost: { wood: 2, stone: 2 }, warmth: 6, light: 14, hazard: 'hot within 0.6' } },
+};
+
+// drives, 0..1
+const D = { food: 0.7, water: 0.55, energy: 0.85, wonder: 0.45, joy: 0.6 };
+const DRIVES = [['food', 'Fullness', '#b6f04a'], ['water', 'Water', '#7fd6ff'], ['energy', 'Energy', '#ff8a3d'], ['wonder', 'Wonder', '#e0369e'], ['joy', 'Joy', '#ffd23f']];
+const bump = (k, v) => { D[k] = clamp01(D[k] + v); };
+const interests = { Trains: 0.8, Flowers: 0.7, Cats: 0.6, Music: 0.5, Space: 0.3, Tools: 0.1 };
+
+// ---------------------------------------------------------------- journal, toasts, knowledge
+const journal = [];
+function toast(text) {
+  const el = document.createElement('div'); el.className = 'toast card'; el.textContent = text; $('feed').prepend(el);
+  while ($('feed').children.length > 4) $('feed').lastChild.remove();
+  setTimeout(() => el.classList.add('out'), 5200); setTimeout(() => el.remove(), 5900);
+}
+function log(icon, text, show) {
+  journal.unshift({ d: day, t: clockText(tod).time, icon, text }); if (journal.length > 80) journal.pop();
+  if (show) toast(icon + ' ' + text);
+  renderTab('journal');
+}
+const KN = { can: ['✅', 'Can do'], needs: ['🔒', 'Needs something first'], danger: ['⚠️', 'Dangerous'], no: ['⛔', 'Impossible'] };
+const know = {};
+function learn(key, s, label, note, quiet) {
+  if (know[key]?.s === s) return;
+  know[key] = { s, label, note };
+  if (!quiet) { log('🧠', `Learned: ${label}: ${note}`, true); bump('wonder', 0.25); }
+  renderTab('mind');
+}
+learn('pond:drink', 'can', 'Drink at the pond', 'fresh water at the shore', true);
+learn('bush:eat', 'can', 'Eat berries', 'pink ones grow back', true);
+learn('flower:pick', 'can', 'Pick and plant flowers', 'they like open grass', true);
+learn('hut:sleep', 'can', 'Sleep in the hut', 'when it gets dark', true);
+
+// ---------------------------------------------------------------- things anyone can do to the world (you or Pino)
+const atop = (e, dy = 0) => [e.x, ground(e.x, e.z) + dy, e.z];
+function give(item, n, e) { inv[item] += n; if (e) floatText(...atop(e, 1), `+${n} ${ITEMS[item][0]}`); drawHotbar(item); }
+function kill(e) { e.alive = false; e.obj.removeFromParent(); pickDirty = true; if (hover === e) setHover(null); }
+function wobble(e, amp = 0.12) { tween(0.5, k => { e.obj.rotation.z = Math.sin(k * 18) * amp * (1 - k); }); }
+function nearest(kind, ok, from = kiwi.position) {
+  let best = null, bd = 1e9;
+  for (const e of ents) { if (!e.alive || e.kind !== kind || (ok && !ok(e))) continue; const d = Math.hypot(e.x - from.x, e.z - from.z); if (d < bd) { bd = d; best = e; } }
+  return best;
+}
+function chop(e) {
+  const T = tools.axe; if (!T || !e.alive) return false;
+  e.hp -= T.damage; wobble(e, 0.1); burst(e.x, ground(e.x, e.z) + 1, e.z, '#e9c79a', 8);
+  if (e.hp > 0) return true;
+  e.alive = false; pickDirty = true; if (hover === e) setHover(null);
+  tween(0.9, k => { e.obj.rotation.z = k * k * 1.5; }, () => {
+    e.obj.removeFromParent(); burst(e.x, ground(e.x, e.z) + 0.5, e.z, '#5aa04a', 18, 3.5);
+    for (const [it, n] of Object.entries(T.yields)) give(it, n, e);
+    addStump(e.x, e.z);
+  });
+  return true;
+}
+function shake(e) {
+  wobble(e, 0.2); burst(e.x, ground(e.x, e.z) + e.H * 0.6, e.z, '#7ab84a', 14, 2.5, 1);
+  if (Math.random() < 0.4) give('stick', 1, e); else floatText(...atop(e, 2), '🍃');
+}
+function pickUp(e) { const it = { flower: 'flower', pebble: 'stone', stick: 'stick' }[e.kind]; give(it, 1, e); kill(e); }
+function pickBerry(e) { if (e.berries < 1) return false; e.berries--; setBerries(e); give('berry', 1, e); return true; }
+function plant(x, z) { if (inv.flower < 1) return; inv.flower--; drawHotbar(); const f = addFlower(x, z); burst(x, ground(x, z) + 0.2, z, FLOWER_COLS[f.ci], 6, 1.2, 2); return f; }
+function canAfford(cost) { return Object.entries(cost).every(([k, n]) => inv[k] >= n); }
+function pay(cost) { for (const [k, n] of Object.entries(cost)) inv[k] -= n; drawHotbar(); }
+function buildFire(x, z) {
+  const T = tools.campfire; if (!T || !canAfford(T.cost)) return null;
+  pay(T.cost); const f = addCampfire(x, z); burst(x, ground(x, z) + 0.4, z, '#ffd23f', 14); return f;
+}
+function splash(x, z) { burst(x, WATER_Y + 0.1, z, '#bfe6ff', 16, 2.2, 4); }
+
+// ---------------------------------------------------------------- Pino: a plan is a list of steps  { to, r, dur, icon, text, anim, face, on }
+const pn = { plan: [], step: null, t: 0, id: '', recent: [], counts: {}, asleep: false, side: 0, fear: 0, anim: '', icon: '🌱', text: 'Pino is waking up', cold: false };
+const requests = [];
+const go = (to, r, icon, text) => ({ to, r, icon, text });
+const act = (dur, icon, text, anim, on, face) => ({ dur, icon, text, anim, on, face });
+function shoreNear(x, z) {
+  const a0 = Math.atan2(z - POND.z, x - POND.x);
+  for (let k = 0; k < 14; k++) for (const s of [1, -1]) {
+    const a = a0 + s * k * 0.25, px = POND.x + Math.cos(a) * (POND.r + 0.5), pz = POND.z + Math.sin(a) * (POND.r + 0.5);
+    if (!main.isWater(px, pz, 0.3)) return [px, pz];
+  }
+  return [POND.x - POND.ux * (POND.r + 0.6), POND.z - POND.uz * (POND.r + 0.6)];
+}
+const drinkPlan = () => { const [x, z] = shoreNear(kiwi.position.x, kiwi.position.z); return [go([x, z], 0.3, '💧', 'Pino is thirsty and walks to the pond'),
+  act(2.6, '💧', 'Pino drinks from the pond', 'peck', () => { D.water = 1; burst(x, WATER_Y + 0.3, z, '#bfe6ff', 6, 1, 2); }, [POND.x, POND.z])]; };
+const eatPlan = b => b ? [go(b, 1.2, '🫐', 'Pino is hungry and looks for berries'), act(2.2, '🫐', 'Pino eats berries off the bush', 'peck', () => {
+    if (b.berries > 0) { b.berries--; setBerries(b); bump('food', 0.4); floatText(...atop(b, 1), '😋'); } else say('🤔', 'Pino found the bush empty'); }, [b.x, b.z])]
+  : inv.berry > 0 ? [act(2, '🫐', 'Pino eats berries from the stash', 'peck', () => { if (inv.berry > 0) { inv.berry--; drawHotbar(); bump('food', 0.4); } })] : null;
+const chopPlan = e => e && [go(e, 1.5, '🪓', 'Pino carries his axe to a tree'),
+  ...Array.from({ length: Math.ceil(e.hp / tools.axe.damage) }, () => act(tools.axe.swing, '🪓', 'Pino chops the tree', 'peck', () => chop(e), [e.x, e.z])),
+  act(1, '🪵', 'Pino looks proud of the wood', 'hop', () => bump('joy', 0.08))];
+const gatherPlan = kind => { const e = nearest(kind); return e && [go(e, 0.7, '👀', `Pino goes to pick up a ${kind}`), act(0.8, '👀', `Pino picks up a ${kind}`, 'peck', () => e.alive && pickUp(e), [e.x, e.z])]; };
+
+function inventPlan(id) {
+  const I = INVENT[id], steps = [act(2.6, '💡', `Pino has an idea: ${I.idea}`, 'think', () => { log('💡', `Idea: ${I.name}. ${I.idea}`, true); interests.Tools = Math.min(1, interests.Tools + 0.2); })];
+  const lack = Object.fromEntries(Object.entries(I.needs).map(([k, n]) => [k, n - inv[k]]));
+  if (lack.wood > 0) return null;                       // wood needs the axe first
+  const used = new Set();
+  for (const [it, kind] of [['stick', 'stick'], ['stone', 'pebble']]) for (let i = 0; i < (lack[it] || 0); i++) {
+    const e = nearest(kind, x => !used.has(x)); if (!e) return null; used.add(e);
+    steps.push(go(e, 0.7, '👀', `Pino looks for a ${kind} for the ${I.name.toLowerCase()}`), act(0.8, '👀', `Pino picks up a ${kind}`, 'peck', () => e.alive && pickUp(e), [e.x, e.z]));
+  }
+  const code = `// ${I.name.toLowerCase()}.json  (written by Pino)\n` + JSON.stringify({ id, model: { parts: I.recipe.parts.length + ' primitives', palette: 'mine' }, behaviour: I.def }, null, 1)
+    + `\n\n> checks: has parts ✓  fits size ✓  cost paid ✓\n> test run in sandbox ✓`;
+  steps.push(go(bench, 1.2, '🔧', `Pino takes the parts to his workbench`),
+    { dur: 5, icon: '🔧', text: `Pino builds the ${I.name.toLowerCase()} and writes how it works`, anim: 'peck', face: [bench.x, bench.z], code },
+    act(1.2, I.icon, `Pino made a ${I.name.toLowerCase()}!`, 'hop', () => {
+      if (!canAfford(I.needs)) return say('🤔', 'Pino lost a part on the way');
+      pay(I.needs); tools[id] = I.def; drawHotbar(id); bump('joy', 0.25); bump('wonder', 0.2);
+      burst(bench.x, ground(bench.x, bench.z) + 1, bench.z, '#ffd23f', 20);
+      log(I.icon, `Invented the ${I.name}. You can use it too.`, true);
+      if (id === 'axe') { axeModel.visible = true; learn('tree:chop', 'can', 'Chop a tree', 'with my axe: three swings, then wood'); }
+      if (id === 'campfire') { addCampfire(firePos.x, firePos.z); learn('night:cold', 'can', 'Stay warm at night', 'sit by the campfire'); }
+    }));
+  return steps;
+}
+
+// Things Pino finds out by trying. Each one ends in a fact about what is possible, dangerous or impossible.
+const edgeSpot = (th, rn) => { const er = main.edgeR(th) * rn; return [Math.cos(th) * er, Math.sin(th) * er]; };
+const EXPERIMENTS = [
+  { key: 'tree:chop', plan() { const e = nearest('tree'); return e && [go(e, 1.4, '🌲', 'Pino wonders if he can get wood from a tree'),
+      act(2.4, '🌲', 'Pino pecks at the trunk. Nothing happens', 'peck', () => { wobble(e, 0.03); learn('tree:chop', 'needs', 'Chop a tree', 'my beak is too soft. Needs something sharp and heavy'); }, [e.x, e.z])]; } },
+  { key: 'edge:peek', plan() { const th = 3.9, a = edgeSpot(th, 0.9), b = edgeSpot(th, 0.72); return [go(a, 0.4, '👀', 'Pino creeps toward the edge of the island'),
+      act(2.6, '😨', 'Pino looks down. It does not end', 'shiver', () => { pn.fear = 1; bump('joy', -0.1); learn('edge:peek', 'danger', 'The island edge', 'falling into the void means not coming back. Stay two steps away'); }, edgeSpot(th, 1.2)),
+      go(b, 0.4, '😮‍💨', 'Pino backs away from the edge')]; } },
+  { key: 'boulder:push', plan() { const e = nearest('boulder'); return e && [go(e, e.r + 0.5, '🪨', 'Pino wants to see what is under the big rock'),
+      act(2.6, '😤', 'Pino pushes the boulder with all he has', 'peck', () => { bump('energy', -0.08); learn('boulder:push', 'no', 'Move a boulder', 'far too heavy for a kiwi. Small stones only'); }, [e.x, e.z])]; } },
+  { key: 'pond:swim', plan() { const [x, z] = shoreNear(kiwi.position.x, kiwi.position.z); return [go([x, z], 0.3, '🌊', 'Pino wonders how deep the pond is'),
+      act(2.4, '😬', 'Pino dips one foot in and pulls it back', 'shiver', () => { splash(x, z); pn.fear = 0.6; learn('pond:swim', 'danger', 'Go into the pond', 'deep water and I cannot swim. Drink from the shore'); }, [POND.x, POND.z])]; } },
+  { key: 'far:visit', plan() { const s = satellites[2].group.position, th = Math.atan2(s.z, s.x), a = edgeSpot(th, 0.86); return [go(a, 0.4, '🏝️', 'Pino wants to visit the island over there'),
+      act(3, '🪽', 'Pino flaps as hard as he can. He stays on the ground', 'hop', () => learn('far:visit', 'no', 'Reach the far islands', 'too far, and kiwis cannot fly. Maybe a bridge someday?'), [s.x, s.z])]; } },
+  { key: 'fire:touch', when: () => fires.some(f => f.alive), plan() { const f = fires.find(x => x.alive); return [go(f, 1.1, '🔥', 'Pino wonders what fire feels like'),
+      act(2, '🥵', 'Pino reaches toward the flame and jumps back', 'shiver', () => { pn.fear = 0.7; learn('fire:touch', 'danger', 'Touch fire', 'hot up close, warm from one step away'); }, [f.x, f.z])]; } },
+];
+
+// what you asked him to do; he can say no, and says why
+function answer(q) {
+  const no = (icon, why) => { toast(`🥝 “${why}”`); return [act(2.2, icon, 'Pino: ' + why, 'think')]; };
+  if (q.verb === 'walk') {
+    if (rnOf(q.x, q.z) > 0.93) return no('⚠️', know['edge:peek'] ? 'Not there. That is the edge and it does not end.' : 'That looks too close to the edge.');
+    if (main.isWater(q.x, q.z, 0.2)) return no('⚠️', 'That is in the water. I cannot swim.');
+    return [go([q.x, q.z], 0.3, '🐾', 'Pino walks to where you pointed'), act(1.2, '🙂', 'Pino looks around', 'hop')];
+  }
+  if (q.verb === 'chop') return tools.axe ? chopPlan(q.ent) : know['tree:chop'] ? no('🔒', 'I cannot chop with a beak. I need a tool first.') : EXPERIMENTS[0].plan();
+  if (q.verb === 'drink') return D.water > 0.9 ? no('💧', 'I am not thirsty right now.') : drinkPlan();
+  if (q.verb === 'eat') return D.food > 0.9 ? no('🫐', 'I am full.') : q.ent.berries > 0 ? eatPlan(q.ent) : no('🤔', 'That bush has no ripe berries.');
+  if (q.verb === 'push') return know['boulder:push'] ? no('⛔', 'I tried. It is impossible for me.') : EXPERIMENTS[2].plan();
+  return null;
+}
+
+function say(icon, text) { pn.icon = icon; pn.text = text; }
+function start(id, plan) {
+  pn.plan = plan; pn.id = id; pn.side = 0;
+  pn.recent.push(id); if (pn.recent.length > 3) pn.recent.shift();
+  const n = pn.counts[id] = (pn.counts[id] || 0) + 1;          // repeating wears on him, new things lift him a little
+  if (n === 1) bump('joy', 0.03); else if (n > 3) bump('joy', -0.04);
+  $('goal').textContent = id.replace(':', ' → ');
+}
+function decide() {
+  const q = requests.shift();
+  if (q) { const p = answer(q); if (p) return start('asked:' + q.verb, p); }
+  if (isNight()) return start('sleep', [go([door.x, door.z], 0.4, '🌙', 'Pino is heading home for the night'), act(0.3, '💤', 'Pino goes inside', '', () => { pn.asleep = true; kiwi.visible = false; log('💤', 'Went to bed.'); })]);
+  const c = [], add = (id, score, mk, force) => { if (force || !pn.recent.includes(id)) c.push({ id, score: score + Math.random() * 0.25, mk }); };
+  const bush = nearest('bush', e => e.berries > 0), needWood = pn.cold && !tools.campfire && inv.wood < 2;
+  add('drink', (1 - D.water) * 2.2, drinkPlan, D.water < 0.2);
+  add('eat', (1 - D.food) * 2, () => eatPlan(bush), D.food < 0.2);
+  if (know['tree:chop']?.s === 'needs' && !tools.axe) add('invent:axe', 1.3, () => inventPlan('axe'));
+  if (pn.cold && !tools.campfire) add('invent:campfire', 1.2, () => inventPlan('campfire'));
+  if (tools.axe && inv.wood < 4) add('chop', 0.7 + (needWood ? 0.8 : 0), () => chopPlan(nearest('tree')), needWood);
+  if (pn.cold && !tools.campfire && inv.stone < 2) add('gather', 1.0, () => gatherPlan('pebble'), true);
+  const ex = EXPERIMENTS.find(x => !know[x.key] && (!x.when || x.when()));
+  if (ex) add('curious', 0.55 + (1 - D.wonder) * 0.9, () => ex.plan());
+  add('decorate', 0.45 + (1 - D.joy) * 0.7, () => {
+    const f = nearest('flower', e => Math.hypot(e.x - hutPos.x, e.z - hutPos.z) > 7); if (!f) return null;
+    const a = Math.random() * 6.28, d = 3.6 + Math.random() * 2.5, x = hutPos.x + Math.cos(a) * d, z = hutPos.z + Math.sin(a) * d;
+    return [go(f, 0.6, '🌸', 'Pino spots a flower he likes'), act(0.8, '🌸', 'Pino picks the flower', 'peck', () => f.alive && pickUp(f), [f.x, f.z]),
+      go([x, z], 0.3, '🌸', 'Pino carries the flower home'), act(1.2, '🌸', 'Pino plants it by the hut', 'peck', () => { if (plant(x, z)) bump('joy', 0.15); })];
+  });
+  add('waterfall', 0.4 + (1 - D.wonder) * 0.3, () => { const x = POND.ex * 0.84 - POND.uz * 2.6, z = POND.ez * 0.84 + POND.ux * 2.6;
+    return [go([x, z], 0.4, '🌊', 'Pino walks to the waterfall'), act(4, '🌊', 'Pino watches the water fall into the void', 'think', () => { bump('wonder', 0.12); bump('joy', 0.05); }, [POND.ex, POND.ez])]; });
+  if (U.uNight.value < 0.2) add('butterfly', 0.4 + (1 - D.joy) * 0.4, () => { const b = butterflies[Math.floor(Math.random() * butterflies.length)];
+    return [go([b.g.position.x, b.g.position.z], 0.8, '🦋', 'Pino chases a butterfly'), act(2, '🦋', 'Pino hops after it and misses', 'hop', () => bump('joy', 0.12))]; });
+  add('rest', 0.25 + (1 - D.energy) * 0.9, () => [go(bench, 1.3, '😌', 'Pino wants a break'), act(4, '😌', 'Pino rests by his workbench', 'think', () => bump('energy', 0.12))]);
+  if (NEWS.some(n => !n.read)) add('news', 0.4, () => [act(3.5, '📰', 'Pino reads the news channel', 'think', readNews)]);
+  add('style', 0.3, () => [act(3.5, '🎨', 'Pino tinkers with his UI style', 'think', evolveStyle)]);
+  if (fires.some(f => f.alive) && U.uNight.value > 0.25) add('warm', 1.1, () => { const f = fires.find(x => x.alive);
+    return [go(f, 1.5, '🔥', 'Pino goes to sit by the fire'), act(5, '🔥', 'Pino warms up by the campfire', 'think', () => bump('joy', 0.12), [f.x, f.z])]; });
+  c.sort((a, b) => b.score - a.score);
+  for (const k of c) { const p = k.mk(); if (p) return start(k.id, p); }
+  start('idle', [act(2, '☁️', 'Pino looks at the clouds', 'think')]);
+}
+
+// ================================================================ NEWS CHANNEL and STYLE (sample data; the real ones come from RSS and web search)
+const NEWS = [
+  { h: 'Night train route reopens across the mountains', tags: ['Trains'], say: 'A night train! I want to draw one with glowing windows.' },
+  { h: 'Central bank holds interest rates steady', tags: ['Economy'], say: 'I do not know what that means. Moving on.' },
+  { h: 'Rare flower blooms after a seven-year wait', tags: ['Flowers'], say: 'Seven years for one flower. I should be more patient with mine.' },
+  { h: 'Shelter reports a record month for cat adoptions', tags: ['Cats'], say: 'So many cats found a home. Good.' },
+  { h: 'City council debates new parking rules', tags: ['Local'], say: 'Hm. Okay.' },
+  { h: 'Free piano sample library released', tags: ['Music'], say: 'New piano sounds. I want to try them tonight.' },
+  { h: 'Telescope captures a distant spiral galaxy', tags: ['Space'], say: 'It looks like the pond when I stir it.' },
+];
+function readNews() {
+  const n = NEWS.find(x => !x.read); if (!n) return;
+  n.read = true; const w = Math.max(...n.tags.map(t => interests[t] || 0)); n.hot = w > 0.45;
+  if (n.hot) { bump('wonder', 0.15); n.tags.forEach(t => { if (interests[t]) interests[t] = Math.min(1, interests[t] + 0.05); }); }
+  log('📰', `Read “${n.h}”. ${n.say}`, n.hot); renderTab('news'); renderTab('mind');
+}
+const STYLE = { v: 1, radius: 18, shadow: 4, tilt: -1.2, accent: '#4b47d6', notes: [['v1', 'Cream cards, ink outlines, hard shadows. Looks like my stickers.', 'my own drawings']] };
+const STYLE_MOVES = [
+  ['radius', 26, 'Rounder corners. Softer, like pebbles.', 'web search: sticker sheet layouts'],
+  ['accent', '#e0369e', 'Magenta as the main colour. Louder!', 'a poster in my messages'],
+  ['shadow', 6, 'Deeper hard shadows. Things should look pressed on.', 'web search: playful interface galleries'],
+  ['tilt', 1.6, 'Tilted the labels the other way. More hand-placed.', 'my own drawings'],
+  ['accent', '#1fb5a6', 'Teal. Magenta was shouting at me.', 'the pond at dusk'],
+  ['radius', 14, 'Tighter corners. 26 looked like a toy.', 'looking at it for a day'],
+  ['accent', '#4b47d6', 'Back to violet. It is my colour.', 'my own feathers'],
+];
+function applyStyle() {
+  const s = document.documentElement.style;
+  s.setProperty('--r', STYLE.radius + 'px'); s.setProperty('--sh', STYLE.shadow + 'px'); s.setProperty('--tilt', STYLE.tilt + 'deg'); s.setProperty('--accent', STYLE.accent);
+}
+function evolveStyle() {
+  const [k, v, why, src] = STYLE_MOVES[(STYLE.v - 1) % STYLE_MOVES.length];
+  STYLE[k] = v; STYLE.v++; STYLE.notes.unshift(['v' + STYLE.v, why, src]); applyStyle();
+  log('🎨', `Style v${STYLE.v}: ${why}`, true); renderTab('style');
+}
+
+// ================================================================ UI
+$('drives').innerHTML = DRIVES.map(([k, n, c]) => `<div class="drive">${n}<div class="bar"><i id="d-${k}" style="background:${c}"></i></div></div>`).join('');
+function drawHotbar(bumped) {
+  const slots = Object.entries(ITEMS).map(([k, [ic, n]]) => `<div class="slot ${inv[k] ? '' : 'empty'} ${bumped === k ? 'bump' : ''}" title="${n}">${ic}${inv[k] ? `<b>${inv[k]}</b>` : ''}</div>`);
+  const ts = Object.entries(INVENT).map(([k, I]) => `<div class="slot tool ${tools[k] ? '' : 'empty'} ${bumped === k ? 'bump' : ''}" title="${I.name}${tools[k] ? ': invented by Pino, you can use it' : ': not invented yet'}">${tools[k] ? I.icon : '❔'}</div>`);
+  $('hotbar').innerHTML = slots.join('') + ts.join('');
+}
+const TABS = { mind: '🧠 Mind', journal: '📓 Journal', news: '📰 News channel', style: '🎨 Pino\'s style', world: '⚙️ World' };
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+function renderTab(name) {
+  if (name !== openTab) return;
+  const el = $('tab-' + name);
+  if (name === 'mind') {
+    const groups = Object.entries(KN).map(([s, [ic, title]]) => {
+      const rows = Object.values(know).filter(k => k.s === s).map(k => `<div class="row"><b>${ic}</b><span>${esc(k.label)}<small>${esc(k.note)}</small></span></div>`).join('');
+      return rows && `<h3>${title}</h3>${rows}`;
+    }).join('');
+    el.innerHTML = `<h3>Feeling</h3><div class="row"><b>${moodIcon()}</b><span>${moodText()}</span></div>
+      <h3>What he understands about the world</h3><div class="note">He starts knowing almost nothing and finds the rest out by trying.</div>${groups}
+      <h3>Tools he invented</h3>${Object.keys(tools).map(k => `<div class="row"><b>${INVENT[k].icon}</b><span>${INVENT[k].name}<small>${esc(JSON.stringify(tools[k]))}</small></span></div>`).join('') || '<div class="note">None yet. He has to run into a problem first.</div>'}
+      <h3>Interests</h3><div class="tags">${Object.entries(interests).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="tag" style="background:${v > 0.65 ? 'var(--sun)' : v > 0.4 ? 'var(--soft)' : '#fff'}">${k} ${Math.round(v * 100)}</span>`).join('')}</div>`;
+  } else if (name === 'journal') {
+    el.innerHTML = journal.map(j => `<div class="row"><b>${j.icon}</b><span>${esc(j.text)}<small>Day ${j.d} · ${j.t}</small></span></div>`).join('') || '<div class="note">Nothing written yet.</div>';
+  } else if (name === 'news') {
+    el.innerHTML = `<div class="note">Sample headlines for this demo. The real channel pulls RSS feeds; Pino only cares about what touches his interests.</div>` +
+      NEWS.map(n => `<div class="news ${n.read ? '' : 'unread'}"><div class="tags">${n.tags.map(t => `<span class="tag">${t}</span>`).join('')}${n.read ? (n.hot ? '<span class="tag" style="background:var(--pop)">cares</span>' : '<span class="tag">shrug</span>') : ''}</div><b>${esc(n.h)}</b>${n.read ? `<q>${esc(n.say)}</q>` : ''}</div>`).join('');
+  } else if (name === 'style') {
+    el.innerHTML = `<div class="note">This whole interface uses Pino's style tokens. When he changes one, the app changes with it.</div>
+      <h3>Style guide v${STYLE.v}</h3>
+      <div class="sw">${['--cream', '--ink', '--accent', '--soft', '--pop', '--sun', '--mint'].map(c => `<i style="background:var(${c})" title="${c}"></i>`).join('')}</div>
+      <div class="tags"><span class="tag">radius ${STYLE.radius}px</span><span class="tag">shadow ${STYLE.shadow}px</span><span class="tag">tilt ${STYLE.tilt}°</span><span class="tag">outline 2.5px</span></div>
+      <div id="preview" class="card"><b>Welcome to my shop</b><button>Buy a drawing</button></div>
+      <h3>Why it looks like this</h3>${STYLE.notes.map(([v, why, src]) => `<div class="row"><b>${v}</b><span>${esc(why)}<small>from: ${esc(src)}</small></span></div>`).join('')}`;
+  }
+}
+function showTab(name) {
+  openTab = openTab === name ? null : name;
+  $('drawer').hidden = !openTab;
+  document.querySelectorAll('#rail button').forEach(b => b.classList.toggle('on', b.dataset.tab === openTab));
+  document.querySelectorAll('.tab').forEach(t => { t.hidden = t.id !== 'tab-' + openTab; });
+  if (openTab) { $('dTitle').textContent = TABS[openTab]; renderTab(openTab); }
+}
+document.querySelectorAll('#rail button').forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
+$('dClose').onclick = () => showTab(openTab);
+$('follow').onclick = () => { follow = !follow; $('follow').classList.toggle('on', follow); };
+const moodIcon = () => pn.asleep ? '😴' : pn.fear > 0.4 ? '😨' : D.food < 0.2 || D.water < 0.2 ? '😣' : pn.cold && U.uNight.value > 0.3 && !fires.length ? '🥶' : D.joy > 0.7 ? '😄' : D.joy < 0.35 ? '😕' : '🙂';
+const moodText = () => pn.asleep ? 'Asleep.' : pn.fear > 0.4 ? 'Scared. His heart is still racing.' : D.water < 0.2 ? 'Very thirsty.' : D.food < 0.2 ? 'Very hungry.' : D.joy > 0.7 ? 'Happy.' : D.joy < 0.35 ? 'A bit down. Same things too often.' : 'Content.';
+
+const sync = () => {
+  $('vTod').textContent = clockText(tod).time; $('vPix').textContent = pixelSize; $('vLev').textContent = +$('lev').value >= 64 ? 'off' : $('lev').value;
+  for (const [v, i] of [['vRay', 'ray'], ['vBlo', 'blo'], ['vSat', 'sat'], ['vWin', 'win']]) $(v).textContent = (+$(i).value).toFixed(2);
+};
+$('tod').oninput = e => { tod = +e.target.value / 24; sync(); };
+document.querySelectorAll('[data-h]').forEach(b => { b.onclick = () => { tod = +b.dataset.h / 24; $('tod').value = b.dataset.h; sync(); }; });
+document.querySelectorAll('[data-ev]').forEach(b => { b.onclick = () => worldEvent(b.dataset.ev); });
+$('len').onchange = e => { dayLength = +e.target.value; };
+$('pix').oninput = e => { pixelSize = +e.target.value; makeTarget(); sync(); };
+$('lev').oninput = e => { post.uniforms.levels.value = +e.target.value; sync(); };
+$('dit').onchange = e => { post.uniforms.dither.value = e.target.checked ? 1 : 0; };
+$('ray').oninput = sync; $('blo').oninput = e => { post.uniforms.bloom.value = +e.target.value; sync(); };
+$('sat').oninput = e => { post.uniforms.sat.value = +e.target.value; sync(); };
+$('win').oninput = sync;
+sync(); drawHotbar(); applyStyle();
+
+// ================================================================ MOUSE: hover, tooltip, click menu
+const NAMES = { tree: '🌲 Cypress', stump: '🪵 Stump', bush: '🌿 Berry bush', flower: '🌸 Flower', pebble: '🪨 Small stone', stick: '🌿 Stick', boulder: '🪨 Boulder', pond: '💧 Pond', waterfall: '🌊 Waterfall',
+  hut: '🏠 Pino\'s hut', bench: '🔧 Workbench', campfire: '🔥 Campfire', lantern: '🏮 Lantern', pino: '🥝 Pino', ground: '🌱 Grass', cliff: '⛰️ Cliff', far: '🏝️ Far island', balloon: '🎈 Gift balloon' };
+function describe(e) {
+  switch (e.kind) {
+    case 'tree': return tools.axe ? `${e.hp} swing${e.hp > 1 ? 's' : ''} left · click to chop or shake` : 'Too tough for bare hands · click to shake';
+    case 'stump': return `A new tree grows here in ${Math.ceil(e.regrow)}s`;
+    case 'bush': return e.berries ? `${e.berries} ripe · click to pick` : 'No ripe berries yet';
+    case 'flower': case 'pebble': case 'stick': return 'Click to pick up';
+    case 'boulder': return 'Very heavy';
+    case 'pond': return 'Fresh water · deep in the middle';
+    case 'waterfall': return 'Falls off the edge into the void';
+    case 'hut': return pn.asleep ? 'Pino is asleep inside' : 'Pino sleeps here at night';
+    case 'bench': return 'Where Pino builds and programs his tools';
+    case 'campfire': return 'Warm from a step away, hot up close';
+    case 'lantern': return 'Glows at night';
+    case 'pino': return pn.text;
+    case 'ground': return 'Click to send Pino here, plant or build';
+    case 'cliff': return 'A long way down. Dangerous';
+    case 'far': return 'Out of reach. Nobody here can fly';
+    case 'balloon': return 'Something is tied to it · click to pop';
+  }
+}
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), hitLocal = new THREE.Vector3();
+let hover = null, mx = 0, my = 0, needPick = false, downAt = null;
+function setHover(e) { hover = e; ringMesh.visible = !!e && e.r > 0 && e.x !== undefined; renderer.domElement.style.cursor = e && e.kind !== 'ground' && e.kind !== 'cliff' ? 'pointer' : 'grab'; if (!e) $('tip').hidden = true; }
+function pick() {
+  needPick = false;
+  if (pickDirty) { pickList = statics.concat(ents.filter(e => e.alive).map(e => e.obj)); pickDirty = false; }
+  ndc.set(mx / innerWidth * 2 - 1, -(my / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+  let found = null;
+  for (const h of ray.intersectObjects(pickList, true)) {
+    let o = h.object; while (o && !o.userData.ent) o = o.parent;
+    if (!o || !o.userData.ent.alive || (o.userData.ent === PINO && pn.asleep)) continue;
+    found = o.userData.ent; main.group.worldToLocal(hitLocal.copy(h.point)); break;
+  }
+  setHover(found);
+  if (!found) return;
+  const tip = $('tip'); tip.hidden = !$('menu').hidden;
+  tip.innerHTML = `${NAMES[found.kind]}<small>${esc(describe(found))}</small>`;
+  tip.style.left = Math.min(mx + 16, innerWidth - 250) + 'px'; tip.style.top = (my + 18) + 'px';
+}
+const ask = (verb, label, extra = {}) => ({ icon: '🥝', label: 'Ask Pino to ' + label, off: pn.asleep && 'he is asleep', run: () => { requests.push({ verb, ...extra }); toast(`You asked Pino to ${label}.`); } });
+function menuFor(e, x, z) {
+  switch (e.kind) {
+    case 'tree': return [{ icon: '🪓', label: 'Chop', off: !tools.axe && 'needs an axe, and nobody has invented one', run: () => chop(e) }, { icon: '🍃', label: 'Shake', run: () => shake(e) }, ask('chop', 'chop this tree', { ent: e })];
+    case 'bush': return [{ icon: '🫐', label: 'Pick berries', off: !e.berries && 'none are ripe', run: () => pickBerry(e) }, ask('eat', 'eat here', { ent: e })];
+    case 'boulder': return [{ icon: '💪', label: 'Push', run: () => { floatText(e.x, ground(e.x, e.z) + 2, e.z, 'It does not move'); toast('⛔ Too heavy. Some things here are simply impossible.'); } }, ask('push', 'push it', { ent: e })];
+    case 'pond': return [{ icon: '💦', label: 'Splash', run: () => splash(x, z) }, ask('drink', 'drink')];
+    case 'hut': return [{ icon: '🚪', label: 'Knock', run: () => toast(pn.asleep ? '🥝 “…mmh. Tomorrow.”' : 'Nobody is home.') }];
+    case 'bench': return [{ icon: '📐', label: 'See what Pino has invented', run: () => { if (openTab !== 'mind') showTab('mind'); } }];
+    case 'campfire': return [{ icon: '🤲', label: 'Warm your hands', run: () => floatText(e.x, ground(e.x, e.z) + 1.4, e.z, 'warm') }, { icon: '🧺', label: 'Take it apart', run: () => { kill(e); fires.splice(fires.indexOf(e), 1); give('wood', 1, e); give('stone', 2, e); } }];
+    case 'pino': return [
+      { icon: '🤚', label: 'Pet', run: () => { bump('joy', 0.12); pn.fear = 0; floatText(kiwi.position.x, kiwi.position.y + 2, kiwi.position.z, '❤️'); } },
+      { icon: '🫐', label: 'Feed a berry', off: !inv.berry && 'you have no berries', run: () => { inv.berry--; drawHotbar(); bump('food', 0.3); bump('joy', 0.05); floatText(kiwi.position.x, kiwi.position.y + 2, kiwi.position.z, '😋'); } },
+      { icon: '🌸', label: 'Give a flower', off: !inv.flower && 'you have no flowers', run: () => { inv.flower--; drawHotbar(); bump('joy', 0.2); interests.Flowers = Math.min(1, interests.Flowers + 0.05); floatText(kiwi.position.x, kiwi.position.y + 2, kiwi.position.z, '🌸❤️'); log('🌸', 'You gave me a flower.'); } },
+      { icon: '💭', label: 'What are you doing?', run: () => toast(`🥝 “${pn.text.replace(/^Pino /, 'I ').replace(/\bhis\b/g, 'my').replace(/\bhe\b/g, 'I')}.”`) },
+      { icon: '🎥', label: follow ? 'Stop following' : 'Follow with the camera', run: () => $('follow').click() }];
+    case 'ground': return [
+      { ...ask('walk', 'walk here', { x, z }), icon: '🐾' },
+      { icon: '🌸', label: 'Plant a flower', off: !inv.flower && 'pick one first', run: () => plant(x, z) },
+      { icon: '🔥', label: 'Build a campfire', off: !tools.campfire ? 'nobody has invented it yet' : !canAfford(tools.campfire.cost) && 'needs 2 wood and 2 stone', run: () => buildFire(x, z) }];
+  }
+  return null;
+}
+function closeMenu() { $('menu').hidden = true; }
+function click(e, sx, sy) {
+  if (!e) return;
+  if (['flower', 'pebble', 'stick'].includes(e.kind)) return pickUp(e);
+  if (e.kind === 'balloon') return popBalloon();
+  if (e.kind === 'far') return toast('⛔ Too far. Nobody here can fly, yet.');
+  const items = menuFor(e, hitLocal.x, hitLocal.z); if (!items) return;
+  const m = $('menu'); m.innerHTML = `<h4>${NAMES[e.kind]}</h4>`;
+  for (const it of items) {
+    const b = document.createElement('button'); b.disabled = !!it.off;
+    b.innerHTML = `<span>${it.icon}</span><span>${it.label}${it.off ? `<small>${it.off}</small>` : ''}</span>`;
+    b.onclick = () => { closeMenu(); if (e.alive !== false) it.run(); }; m.append(b);
+  }
+  m.hidden = false; $('tip').hidden = true;
+  m.style.left = Math.min(sx + 8, innerWidth - 230) + 'px'; m.style.top = Math.min(sy + 8, innerHeight - 40 - items.length * 40) + 'px';
+}
+const cv = renderer.domElement;
+cv.addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; needPick = true; });
+cv.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY]; closeMenu(); });
+cv.addEventListener('pointerup', e => {
+  if (!downAt || e.button !== 0 || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
+  mx = e.clientX; my = e.clientY; pick(); click(hover, mx, my);
+});
+cv.addEventListener('pointerleave', () => setHover(null));
+addEventListener('keydown', e => { if (e.key === 'Escape') { closeMenu(); if (openTab) showTab(openTab); } });
+
+// ================================================================ THINGS OUTSIDE PINO'S CONTROL
+let nextEvent = 45, bal = null, starT = 0;
+function worldEvent(kind) {
+  if (kind === 'rain') { rain = 40; log('🌧️', 'It started to rain. Berries ripen faster.', true); }
+  if (kind === 'gust') { gust = 8; log('🌬️', 'A strong gust runs over the island.', true); for (let i = 0; i < 12; i++) { const e = ents[Math.floor(Math.random() * ents.length)]; if (e.alive && e.kind === 'tree') burst(e.x, ground(e.x, e.z) + e.H * 0.7, e.z, '#7ab84a', 6, 4, 1); } }
+  if (kind === 'balloon' && !bal) { const a = Math.random() * 6.28; bal = { t: 0, a }; BALLOON_ENT.alive = true; balloon.visible = true; log('🎈', 'A balloon drifts in from the void with something tied to it.', true); }
+  if (kind === 'star') { starT = 1.4; star.visible = true; if (U.uNight.value > 0.5) toast('🌠 A shooting star.'); }
+}
+function popBalloon() {
+  const p = balloon.position, it = ['wood', 'stone', 'berry', 'flower'][Math.floor(Math.random() * 4)], n = 2 + Math.floor(Math.random() * 2);
+  burst(p.x, p.y + 2.3, p.z, '#ff8fd8', 26, 4, 2); BALLOON_ENT.alive = false; balloon.visible = false; bal = null; setHover(null);
+  inv[it] += n; drawHotbar(it); floatText(p.x, p.y + 1, p.z, `+${n} ${ITEMS[it][0]}`);
+  log('🎁', `The balloon carried ${n} ${ITEMS[it][1].toLowerCase()}.`, true); bump('wonder', 0.1);
+}
+
+// ================================================================ PINO: walking and doing
+const turnTo = (ang, k) => { let d = ang - kiwi.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); kiwi.rotation.y += d * k; };
+function walk(dt, tx, tz, t) {
+  const p = kiwi.position; let dx = tx - p.x, dz = tz - p.z; const d = Math.hypot(dx, dz);
+  if (d < 0.05) return d;
+  dx /= d; dz /= d;
+  const blocked = (ax, az) => main.isWater(p.x + ax * 0.9, p.z + az * 0.9, 0.45);
+  if (blocked(dx, dz)) {                                  // water ahead: follow the shore, turning toward the middle of the island
+    if (!pn.side) pn.side = dx * -p.z - dz * -p.x > 0 ? 1 : -1;
+    for (let a = 0.35; a < 3.2; a += 0.35) { const c = Math.cos(a * pn.side), s = Math.sin(a * pn.side), nx = dx * c - dz * s, nz = dx * s + dz * c; if (!blocked(nx, nz)) { dx = nx; dz = nz; break; } }
+  }
+  const step = Math.min(d, 3 * dt); p.x += dx * step; p.z += dz * step;
+  p.y = ground(p.x, p.z) + Math.abs(Math.sin(t * 10)) * 0.08; kiwi.rotation.z = 0;
+  turnTo(Math.atan2(-dz, dx), Math.min(1, dt * 10));
+  return d - step;
+}
+function stepPino(dt, t) {
+  const night = U.uNight.value, hasFire = fires.length > 0;
+  const slow = pn.asleep ? 0.3 : 1;
+  D.food = clamp01(D.food - slow * dt / 260); D.water = clamp01(D.water - slow * dt / 200); D.wonder = clamp01(D.wonder - slow * dt / 160);
+  D.energy = clamp01(D.energy + (pn.asleep ? dt / 45 : -dt / 420)); D.joy = clamp01(D.joy + (0.5 - D.joy) * dt / 200 - (pn.cold && night > 0.3 && !hasFire && !pn.asleep ? dt / 150 : 0));
+  pn.fear = Math.max(0, pn.fear - dt / 7);
+  PINO.x = kiwi.position.x; PINO.z = kiwi.position.z;
+  if (pn.asleep) {
+    say('💤', 'Pino is asleep');
+    if (!isNight()) { pn.asleep = false; kiwi.visible = true; kiwi.position.set(door.x, ground(door.x, door.z), door.z); day++; pn.counts = {}; pn.recent = []; log('🌅', `Day ${day}. Woke up ${D.joy > 0.55 ? 'in a good mood' : 'a little grumpy'}.`, true); }
+    return;
+  }
+  if (!pn.cold && night > 0.3) { pn.cold = true; learn('night:cold', 'needs', 'Stay warm at night', 'it gets cold when the sun goes. Needs something warm'); }
+  if (requests.length && !pn.id.startsWith('asked') && pn.id !== 'sleep') { pn.plan = []; if (pn.step?.to && !pn.arrived) pn.step = null; }
+  if (!pn.step) {
+    if (!pn.plan.length) decide();
+    pn.step = pn.plan.shift(); pn.t = pn.step.dur || 0; pn.arrived = !pn.step.to; pn.walkT = 0;
+  }
+  const s = pn.step; say(s.icon, s.text);
+  if (!pn.arrived) {
+    const tgt = Array.isArray(s.to) ? s.to : s.to.alive ? [s.to.x, s.to.z] : null;
+    if (!tgt || (pn.walkT += dt) > 45) { pn.plan = []; pn.step = null; say('🤔', 'Pino changed his mind'); return; }
+    if (walk(dt, tgt[0], tgt[1], t) <= s.r) pn.arrived = true;
+  } else if (pn.t > 0) {
+    pn.t -= dt; const p = kiwi.position, g = ground(p.x, p.z);
+    if (s.face) turnTo(Math.atan2(-(s.face[1] - p.z), s.face[0] - p.x), Math.min(1, dt * 8));
+    kiwi.rotation.z = s.anim === 'peck' ? -Math.abs(Math.sin(t * 7)) * 0.4 : s.anim === 'shiver' ? Math.sin(t * 40) * 0.06 : s.anim === 'think' ? Math.sin(t * 2) * 0.05 : 0;
+    p.y = g + (s.anim === 'hop' ? Math.abs(Math.sin(t * 8)) * 0.35 : 0);
+    if (s.code) { $('code').hidden = false; $('code').textContent = s.code.slice(0, Math.floor(s.code.length * Math.min(1, (1 - pn.t / s.dur) * 1.25))) + '▌'; }
+  } else { kiwi.rotation.z = 0; if (s.code) setTimeout(() => { $('code').hidden = true; }, 2500); s.on?.(); pn.step = null; }
+}
+
+// ================================================================ MAIN LOOP
+const sunDir = new THREE.Vector3(), moonDir = new THREE.Vector3(), tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
+const clock = new THREE.Clock();
+let frame = 0, rainK = 0;
+kiwi.position.set(door.x, ground(door.x, door.z), door.z);
+log('🌱', 'Day 1. I live on an island. I do not know yet what I can do here.');
+let simT = 0;
+function tick(simDt) {   // simDt set = advance the simulation without drawing (used by world.skip for testing)
+  const dt = simDt || Math.min(clock.getDelta(), 0.1), t = (simT += dt); frame++;
+  U.uTime.value = t;
+  if (dayLength > 0) tod = (tod + dt / dayLength) % 1;
+
+  // weather and random events
+  rain = Math.max(0, rain - dt); gust = Math.max(0, gust - dt);
+  rainK = lerp(rainK, rain > 0 ? 1 : 0, Math.min(1, dt * 0.8)); rainMat.uniforms.uRain.value = rainK;
+  U.uWind.value = +$('win').value * (1 + 1.8 * smooth(0, 2, gust) + 0.6 * rainK);
+  if ((nextEvent -= dt) <= 0) { nextEvent = 40 + Math.random() * 50; worldEvent(isNight() ? (Math.random() < 0.6 ? 'star' : 'gust') : ['rain', 'gust', 'balloon', 'balloon'][Math.floor(Math.random() * 4)]); }
+
+  // sky, lights, fog from keyframes
+  sampleKeys(tod);
+  const a = (tod - 0.25) * Math.PI * 2;
+  sunDir.set(Math.cos(a), Math.sin(a), 0.35).normalize(); moonDir.copy(sunDir).negate();
+  const keyDir = sunDir.y > -0.03 ? sunDir : moonDir;
+  const keyI = cur.sunI * smooth(-0.02, 0.12, keyDir.y) * (1 - 0.45 * rainK);
+  key.color.copy(cur.sun); key.intensity = keyI;
+  key.target.position.copy(controls.target); key.position.copy(controls.target).addScaledVector(keyDir, 80);
+  hemi.color.copy(cur.hs); hemi.groundColor.copy(cur.hg); hemi.intensity = cur.hI;
+  scene.fog.color.copy(cur.fog); scene.fog.density = cur.fogD * (0.6 + 0.5 * rainK);
+  SKY.uTop.value.copy(cur.top).lerp(cur.fog, rainK * 0.6); SKY.uHor.value.copy(cur.hor); SKY.uVoid.value.copy(cur.void); SKY.uCloud.value.copy(cur.cloud);
+  SKY.uSunCol.value.copy(cur.sun).multiplyScalar(1.2 * smooth(-0.08, 0.04, sunDir.y) * (1 - rainK));
+  SKY.uSunDir.value.copy(sunDir); SKY.uMoonDir.value.copy(moonDir); SKY.uStars.value = cur.stars; SKY.uAurora.value = cur.aurora;
+  U.uSun.value.copy(cur.sun).multiplyScalar(keyI * Math.max(keyDir.y, 0));
+  U.uAmb.value.copy(cur.hs).multiplyScalar(cur.hI);
+  U.uLight.value.copy(U.uSun.value).add(U.uAmb.value).multiplyScalar(1 / Math.PI);
+  const night = 1 - smooth(-0.1, 0.15, sunDir.y); U.uNight.value = night;
+  const lum = Math.min(1, 0.05 + U.uLight.value.r * 0.3 + U.uLight.value.g * 0.6);
+  flowerMats.forEach(m => m.color.setScalar(lum));
+  DIM.forEach(d => d.m.color.copy(d.base).multiplyScalar(lum));
+  GLOWS.forEach(m => m.color.copy(m.userData.base).multiplyScalar(0.25 + night * 4));
+  cloudMat.color.copy(cur.fog).multiplyScalar(1.15);
+  clouds.forEach(c => { c.position.x += c.userData.v * dt; if (c.position.x > 120) c.position.x = -120; });
+  satellites.forEach(s => { s.group.position.y = s.baseY + Math.sin(t * 0.25 + s.phase) * 0.8; });
+  sky.position.copy(camera.position);
+
+  // the world keeps going on its own
+  for (const e of ents) {
+    if (!e.alive) continue;
+    if (e.kind === 'stump' && (e.regrow -= dt) <= 0) { kill(e); const n = addTree(e.x, e.z, 0.15); tween(30, k => n.obj.scale.setScalar(0.15 + 0.85 * k)); }
+    else if (e.kind === 'bush' && e.berries < 3 && (e.rip -= dt * (rain > 0 ? 3 : 1)) <= 0) { e.berries++; e.rip = 25; setBerries(e); }
+    else if (e.kind === 'campfire') { const f = 0.85 + 0.15 * Math.sin(t * 13 + e.x) + 0.1 * Math.sin(t * 29); e.flame.scale.set(0.26 * f, 0.7 * f, 0.26 * f); e.light.intensity = (0.2 + night) * 45 * f; }
+  }
+  butterflies.forEach(b => {
+    const p = b.g.position; b.g.visible = night < 0.5 && rainK < 0.5;
+    let dx = b.tx - p.x, dz = b.tz - p.z; const d = Math.hypot(dx, dz);
+    if (d < 0.4) { const f = ents[Math.floor(Math.random() * ents.length)]; if (f.alive && f.kind === 'flower') { b.tx = f.x; b.tz = f.z; } else [b.tx, b.tz] = main.randomPoint(0.05, 0.85); }
+    else { p.x += dx / d * 1.6 * dt + Math.sin(t * 3 + b.ph) * dt; p.z += dz / d * 1.6 * dt + Math.cos(t * 2.3 + b.ph) * dt; b.g.rotation.y = Math.atan2(-dz, dx); }
+    p.y = ground(p.x, p.z) + 0.9 + Math.sin(t * 2 + b.ph) * 0.3;
+    const fl = Math.sin(t * 16 + b.ph) * 0.9; b.g.userData.wings[0].rotation.z = fl; b.g.userData.wings[1].rotation.z = -fl;
+  });
+  birds.forEach(b => {
+    const an = t * b.sp + b.ph; b.g.visible = night < 0.6;
+    b.g.position.set(Math.cos(an) * b.rad, b.h + Math.sin(t * 0.5 + b.ph) * 1.5, Math.sin(an) * b.rad); b.g.rotation.y = -an - Math.PI / 2;
+    const fl = Math.sin(t * 6 + b.ph) * 0.6; b.g.userData.wings[0].rotation.z = fl; b.g.userData.wings[1].rotation.z = -fl;
+  });
+  if (bal) {
+    bal.t += dt; const k = bal.t / 50, x0 = Math.cos(bal.a) * 30, z0 = Math.sin(bal.a) * 30, x = lerp(x0, -x0 * 0.8, k), z = lerp(z0, -z0 * 0.8, k);
+    balloon.position.set(x, Math.max(ground(x, z), 0) + 3 + Math.sin(t * 1.2) * 0.5, z); balloon.rotation.z = Math.sin(t * 0.9) * 0.08;
+    if (k >= 1) { bal = null; BALLOON_ENT.alive = false; balloon.visible = false; }
+  }
+  if (starT > 0) { starT -= dt; const k = 1 - starT / 1.4; star.position.copy(camera.position).add(tmp.set(-140 + 260 * k, 150 - 70 * k, -160)); if (starT <= 0) star.visible = false; }
+  stepTweens(dt); stepParticles(dt); stepPino(dt, t);
+  if (simDt) return;
+
+  // camera
+  if (follow) { tmp.copy(kiwi.position); main.group.localToWorld(tmp); tmp2.copy(tmp).sub(controls.target).multiplyScalar(Math.min(1, dt * 3)); controls.target.add(tmp2); camera.position.add(tmp2); }
+  controls.update();
+
+  // mouse: what is under the pointer
+  if (needPick || (hover && frame % 20 === 0)) pick();
+  if (hover && ringMesh.visible) { const s = hover.r * 1.25 * (1 + 0.06 * Math.sin(t * 6)); ringMesh.scale.setScalar(s); ringMesh.position.set(hover.x, ground(hover.x, hover.z) + 0.12, hover.z); }
+
+  // god rays + post
+  tmp.copy(camera.position).addScaledVector(sunDir, 100).project(camera);
+  const onScreen = tmp.z < 1 ? smooth(1.6, 1.0, Math.max(Math.abs(tmp.x), Math.abs(tmp.y))) : 0;
+  post.uniforms.sunUV.value.set((tmp.x + 1) / 2, (tmp.y + 1) / 2);
+  post.uniforms.sunVis.value = onScreen * smooth(-0.05, 0.05, sunDir.y) * (1 - rainK);
+  post.uniforms.rays.value = cur.rays * +$('ray').value;
+  post.uniforms.rayColor.value.copy(cur.sun);
+  post.uniforms.exposure.value = cur.exp * (1 - 0.15 * rainK);
+  const tn = tmp2.set(cur.tint.r, cur.tint.g, cur.tint.b); post.uniforms.tint.value.set(Math.pow(tn.x, 1 / 2.2), Math.pow(tn.y, 1 / 2.2), Math.pow(tn.z, 1 / 2.2));
+  renderer.setRenderTarget(rt); renderer.render(scene, camera);
+  renderer.setRenderTarget(null); renderer.render(postScene, postCam);
+
+  // HUD
+  const bp = pn.asleep ? [hutPos.x, ground(hutPos.x, hutPos.z) + 5, hutPos.z] : [kiwi.position.x, kiwi.position.y + 2.3, kiwi.position.z];
+  const [bx, by, bok] = toScreen(...bp), B = $('bubble');
+  B.style.display = bok ? 'block' : 'none'; B.style.left = (bx + 26) + 'px'; B.style.top = by + 'px';
+  if (frame % 12 === 0) {
+    B.textContent = rainK > 0.5 && !pn.asleep ? pn.icon + '☔' : pn.icon; $('statusText').textContent = pn.text; $('mood').textContent = moodIcon();
+    DRIVES.forEach(([k]) => { $('d-' + k).style.width = Math.round(D[k] * 100) + '%'; });
+    const ct = clockText(tod); $('clock').textContent = `${ct.icon} ${ct.time} · Day ${day}${rain > 0 ? ' · 🌧️' : ''}`;
+    if (dayLength > 0 && openTab === 'world') { $('tod').value = (tod * 24).toFixed(2); sync(); }
+    if (frame % 120 === 0) renderTab('mind');
+  }
+}
+renderer.setAnimationLoop(() => tick());
+window.world = { skip: s => { for (let i = 0; i < s * 10; i++) tick(0.1); }, journal, fires, camera, controls, setTime: h => { tod = h / 24; }, main, kiwi, pn, D, inv, tools, know, ents, worldEvent, requests, decide, INVENT, learn };
+</script>
+</body>
+</html>
