@@ -100,6 +100,22 @@ In-fiction names (optional, helps the small model): the gateway is **the Hatch**
 
 ---
 
+## 4a. Model selection (decided)
+
+| Role | Model | Where | Notes |
+|------|-------|-------|-------|
+| Mind (local) | **Ternary Bonsai 2 9B**, `-Q2_0.gguf` (~2.0-2.4 GB; optional `mmproj-Q8_0` ~0.36 GB for vision) | llama.cpp (b11555 or newer) or LM Studio, local | Runs sim-driven model calls only: Wonder, Ponder, Judge, Resolve, Reader, journal. Leaves >5 GB VRAM for the viewer |
+| Foundry (cloud) | **`qwen/qwen3.7-flash`** via OpenRouter (~$0.03 / $0.13 per 1M in/out tokens) | OpenRouter | Builds Three.js artifacts and HTML pages; vision-reviews render screenshots and reference images |
+
+- Both model names live in `config/pino.toml` (`mind.model`, `foundry.model`). Upgrading (e.g. `qwen/qwen3.8-flash`, Qwen 4) is a one-line change behind `foundry/client.py`.
+- Verify names, prices and the llama.cpp build number against the model cards before Phase 4; they were supplied externally and are not yet checked.
+- **Fallback:** if Bonsai fails the Phase 4 gate (schema failures < 3%, no loop > 6 cycles), switch `mind.model` to Qwen 2.5 7B / Qwen 3 8B at Q4. Nothing else changes.
+- **Build gate:** a build still requires a Resolve call plus the code gate (section rules, hourly and daily cap). Curiosity alone never triggers a build.
+- **Images:** reference images dropped into the airlock are untrusted. They pass a fixed-schema description step with no tools before reaching Pino or the Foundry prompt.
+- **Screenshots:** the Foundry reviews renders from the headless sandbox (Playwright), never from the public viewer.
+
+---
+
 ## 5. The question engine (replaces the action menu)
 
 ### 5.1 Objects
@@ -459,7 +475,7 @@ Each phase ends with something you can run and a test that proves it. Order puts
 
 **Phase 4: Mind v2 (stubbed, then real)**
 - Questions table and queue, five typed calls with Pydantic schemas and one retry then fallback, dedupe, caps, triage.
-- First with `fake_mind`, then Qwen 2.5 7B / Qwen 3 8B on Ollama.
+- First with `fake_mind`, then Ternary Bonsai 2 9B (Q2_0) locally; fall back to Qwen 2.5 7B / Qwen 3 8B Q4 if it misses the gate.
 - Done when: a 24 h real-model run has no loop longer than 6 cycles, schema failures < 3%, and questions are being answered.
 
 **Phase 5: Memory and vault**
@@ -515,7 +531,7 @@ Order of risk: Phases 2-3 (network and injection) and 4 (small-model reliability
 | Builds in parallel? | Serial queue for v1, per-section locks later |
 | Tell visitors when a reply is held or a build dropped? | Show a neutral `held` state; never show Pino's reason text |
 | Minimum age and terms page | Required before any public launch |
-| Which Foundry model | Decide after Phase 7 spike; keep behind one client interface |
+| Which Foundry model | `qwen/qwen3.7-flash` (decided, section 4a); keep behind one client interface |
 | Do answers to visitors need review before posting? | No pre-moderation (as in your v2), but log everything and keep the kill switch |
 
 ---
