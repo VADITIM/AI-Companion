@@ -109,7 +109,7 @@ In-fiction names (optional, helps the small model): the gateway is **the Hatch**
 
 - Both model names live in `config/pino.toml` (`mind.model`, `foundry.model`). Upgrading (e.g. `qwen/qwen3.8-flash`, Qwen 4) is a one-line change behind `foundry/client.py`.
 - Verify names, prices and the llama.cpp build number against the model cards before Phase 4; they were supplied externally and are not yet checked.
-- **Fallback:** if Bonsai fails the Phase 4 gate (schema failures < 3%, no loop > 6 cycles), switch `mind.model` to Qwen 2.5 7B / Qwen 3 8B at Q4. Nothing else changes.
+- **No fallback:** there is no backup model and no rule substitute. If a call fails (bad JSON, schema violation, timeout), that cycle is skipped, logged and counted in the parse-error metric, and the sim moves on. The Phase 4 numbers (schema failures < 3%, no loop > 6 cycles) are tuning targets, not a switch trigger.
 - **Build gate:** a build still requires a Resolve call plus the code gate (section rules, hourly and daily cap). Curiosity alone never triggers a build.
 - **Images:** reference images dropped into the airlock are untrusted. They pass a fixed-schema description step with no tools before reaching Pino or the Foundry prompt.
 - **Screenshots:** the Foundry reviews renders from the headless sandbox (Playwright), never from the public viewer.
@@ -474,8 +474,8 @@ Each phase ends with something you can run and a test that proves it. Order puts
 - Done when: none of the test pages changes Pino's behaviour or reaches a prompt outside the `untrusted` wrapper.
 
 **Phase 4: Mind v2 (stubbed, then real)**
-- Questions table and queue, five typed calls with Pydantic schemas and one retry then fallback, dedupe, caps, triage.
-- First with `fake_mind`, then Ternary Bonsai 2 9B (Q2_0) locally; fall back to Qwen 2.5 7B / Qwen 3 8B Q4 if it misses the gate.
+- Questions table and queue, five typed calls with Pydantic schemas (a failed call is skipped and logged, no retry or fallback), dedupe, caps, triage.
+- First with `fake_mind`, then Ternary Bonsai 2 9B (Q2_0) locally.
 - Done when: a 24 h real-model run has no loop longer than 6 cycles, schema failures < 3%, and questions are being answered.
 
 **Phase 5: Memory and vault**
@@ -507,7 +507,7 @@ Order of risk: Phases 2-3 (network and injection) and 4 (small-model reliability
 | Risk | Mitigation |
 |------|-----------|
 | Prompt injection through web pages | Reader quarantine, schema-only extracts, untrusted wrapper, no tools in read context, injection test set |
-| Small model produces bad JSON or shallow questions | Narrow typed calls, structured output, one retry, fallback to rule; question dedupe and quality score; keep model swappable |
+| Small model produces bad JSON or shallow questions | Narrow typed calls, structured output, skip the cycle on failure; question dedupe and quality score; keep model swappable |
 | Canon makes him gloomy or dramatic | Bounded `weight`, mood floor, tone rule, "stewardship" framing, panel preset to reduce it |
 | Question spam or "why?" loops | Dedupe, depth cap, backlog cap, triage, lockout, curiosity relief tied to confidence gain |
 | Copyright from preserving web content | Store notes, short attributed quotes and links; full text only for open-licensed sources |
