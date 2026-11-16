@@ -1,0 +1,33 @@
+# Settings for the autonomous creature (src/alife). Every value here overrides a default in src/alife/config.py.
+
+[creature]
+id = "honk"
+name = "Honk"
+
+[personality]            # 0..1; these scale how fast needs grow and how much each activity is worth
+curiosity = 0.9
+sociability = 0.4
+creativity = 0.7
+playfulness = 0.7
+independence = 0.8
+patience = 0.5
+cautiousness = 0.35
+
+[sim]
+minutes_per_second = 1.0   # simulated minutes per real second: one day lasts 24 real minutes
+seed = 0                   # 0 = different every run
+
+[model]
+provider = "ollama"        # "none" = rules only
+name = "qwen2.5:7b"
+embed = "nomic-embed-text"
+url = "http://127.0.0.1:11434"
+min_interval_s = 12        # never ask the model more often than this
+
+[mind]
+pace = 3.0                 # how long he stays with one activity (1 = short bursts, 3 = unhurried)
+quiet_minutes = 360        # a thought he has already had is not voiced again for this many simulated minutes
+decide_interval = 180      # least simulated minutes between asking the model to break a tie
+
+[server]
+port = 8770

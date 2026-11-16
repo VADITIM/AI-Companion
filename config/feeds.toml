@@ -1,0 +1,23 @@
+# Where cargo comes from. Every request goes through the gateway, only while a cargo is being unpacked or the hatch is open.
+
+# RSS / Atom feeds: one item from a random feed fills an "interest-matched" slot when its words match his interests,
+# otherwise a "serendipity" slot.
+[[feed]]
+name = "Public Domain Review"
+url = "https://publicdomainreview.org/rss.xml"
+
+[[feed]]
+name = "NASA image of the day"
+url = "https://www.nasa.gov/feeds/iotd-feed/"
+
+[[feed]]
+name = "Atlas Obscura"
+url = "https://www.atlasobscura.com/feeds/latest"
+
+[[feed]]
+name = "Wikipedia featured articles"
+url = "https://en.wikipedia.org/w/api.php?action=featuredfeed&feed=featured&feedformat=atom"
+
+# Topics for his first cargos, before he has interests of his own.
+[seed]
+topics = ["lighthouse", "bread", "lullaby", "tide", "seed bank", "bridge", "kite", "library", "garden", "clock", "bell", "map", "weaving", "choir", "tea"]

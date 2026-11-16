@@ -1,0 +1,1412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Honk's World</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪿</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Nunito for the rounded look; Noto Color Emoji so every emoji shows even on systems without an emoji font -->
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+<style>
+  /* Honk's style tokens */
+  :root { --cream:#fff4d6; --ink:#1a1040; --accent:#4b47d6; --soft:#c9c2ff; --pop:#ff8fd8; --sun:#ffd23f; --mint:#7ff0c6; --sky:#9fd8ff; --peach:#ffb36b;
+          --r:18px; --bw:2.5px; --sh:4px; --tilt:-1.2deg; --spring: cubic-bezier(.34, 1.7, .55, 1); --soft-spring: cubic-bezier(.34, 1.35, .64, 1);
+          --font: "Nunito", ui-rounded, "Segoe UI", system-ui, sans-serif, "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji"; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1a2a; font-family: var(--font); color: var(--ink); font-size: 16px; }
+  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  a { color: var(--accent); font-weight: 800; }
+  svg.i { width: 26px; height: 26px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; display: block; }
+  .card { background: var(--cream); border: var(--bw) solid var(--ink); border-radius: var(--r); box-shadow: var(--sh) var(--sh) 0 var(--ink); }
+  .chip { border: 2px solid var(--ink); border-radius: 999px; background: var(--soft); padding: 3px 10px; font-weight: 800; transition: transform .35s var(--spring), background .2s; }
+  .chip:hover, .chip.on { background: var(--sun); transform: translateY(-2px) rotate(-2deg); }
+  .chip.danger { background: #ffb3b3; justify-self: start; }
+  .chip.danger:hover { background: #ff6b6b; }
+  .chip:disabled { opacity: .6; cursor: wait; }
+  .pill { border: 2px solid var(--ink); border-radius: 999px; background: #fff; padding: 3px 10px; font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+  /* the round icon buttons (top right) */
+  .ibtn { display: grid; place-items: center; width: 50px; height: 50px; border: 2px solid var(--ink); border-radius: 16px; background: #fff; color: var(--ink); padding: 0; position: relative;
+          transition: transform .4s var(--spring), background .2s, box-shadow .2s; box-shadow: 0 3px 0 var(--ink); }
+  .ibtn:hover { transform: translateY(-3px) rotate(-4deg) scale(1.06); background: var(--sun); }
+  .ibtn:active { transform: translateY(2px) scale(.9); box-shadow: 0 1px 0 var(--ink); transition-duration: .08s; }
+  .ibtn.on { background: var(--accent); color: #fff; }
+  .ibtn .lbl { position: absolute; top: calc(100% + 7px); left: 50%; transform: translate(-50%, -4px) scale(.8); opacity: 0; pointer-events: none; white-space: nowrap;
+               background: var(--ink); color: #fff; font-size: 13px; font-weight: 800; padding: 3px 10px; border-radius: 8px; transition: all .3s var(--spring); }
+  .ibtn:hover .lbl, .ibtn:focus-visible .lbl { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+  /* bottom left: how Honk feels and what he is working on */
+  #honkCard { position: fixed; left: 16px; bottom: 16px; width: 360px; padding: 14px 16px 12px; display: grid; gap: 10px; animation: popIn .7s var(--spring) .2s both; }
+  #honkCard header { display: flex; gap: 12px; align-items: center; }
+  #face { width: 62px; height: 62px; flex: none; border-radius: 50%; border: var(--bw) solid var(--ink); background: var(--fc, var(--sun)); display: grid; place-items: center; box-shadow: 0 3px 0 var(--ink); position: relative;
+          transition: background .8s ease; animation: bob 2.6s ease-in-out infinite; }
+  #face::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; border: 3px dashed var(--fc, var(--sun)); opacity: .55; animation: spin 14s linear infinite; }
+  #face.asleep { animation-duration: 5s; filter: saturate(.6); }
+  #mood { font-size: 34px; display: inline-block; line-height: 1; }
+  #mood.boing { animation: boing .6s var(--spring); }
+  #honkCard .who { min-width: 0; flex: 1; }
+  #honkCard h1 { margin: 0; font-size: 22px; font-weight: 900; display: flex; align-items: baseline; gap: 8px; }
+  #moodWord { font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: .07em; padding: 1px 8px; border-radius: 999px; border: 2px solid var(--ink); background: var(--fc, var(--sun)); transition: background .8s; }
+  #statusText { margin: 3px 0 0; line-height: 1.25; font-weight: 700; font-size: 14.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #drives { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .drive { display: grid; gap: 3px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; text-align: center; opacity: .9; cursor: default; }
+  .drive .bar { height: 9px; margin: 0; }
+  .bar { height: 12px; border: 2px solid var(--ink); border-radius: 6px; background: #fff; margin-top: 2px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 3px; transition: width .9s var(--spring); }
+  #flow { border: 2px solid var(--ink); border-radius: 14px; background: #fff3c4; padding: 9px 11px; display: grid; gap: 5px; }
+  #flow.new { animation: tada .9s var(--spring); }
+  #flow .gl { display: flex; gap: 8px; align-items: baseline; font-weight: 900; line-height: 1.25; }
+  #flow .gl span { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  #flow .gl small { font-size: 12px; font-weight: 900; opacity: .6; white-space: nowrap; }
+  #flow .none { font-weight: 600; font-style: italic; opacity: .65; }
+  #flow ol { list-style: none; margin: 0; padding: 0 0 0 4px; display: grid; gap: 2px; border-left: 2px dashed rgba(26, 16, 64, .25); margin-left: 7px; }
+  #flow li { display: flex; gap: 7px; align-items: center; font-size: 13.5px; font-weight: 700; padding: 2px 6px 2px 4px; border-radius: 8px; min-width: 0; }
+  #flow li b { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--ink); display: grid; place-items: center; font-size: 10px; background: #fff; margin-left: -15px; }
+  #flow li span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #flow li.done { opacity: .5; } #flow li.done span { text-decoration: line-through; } #flow li.done b { background: var(--mint); }
+  #flow li.now { background: #fff; outline: 2px solid var(--ink); } #flow li.now b { background: var(--accent); color: #fff; animation: pulse 1.4s ease-in-out infinite; }
+  #flow .act { font-size: 12.5px; font-weight: 800; color: var(--accent); display: flex; gap: 6px; align-items: center; }
+  #flow .act[hidden] { display: none; }
+  #honkCard footer { display: flex; gap: 6px; }
+  #honkCard footer:has(#liveTag[hidden]) { display: none; }
+  #mindPill, #codePill { padding: 11px 16px; font: 900 16px var(--font); white-space: nowrap; cursor: pointer; transform: rotate(var(--tilt)); transition: transform .3s var(--spring), background .2s; }
+  #mindPill:hover, #codePill:hover { background: var(--sun); transform: translateY(-2px) rotate(var(--tilt)); }
+  #liveTag { background: var(--ink); color: var(--mint); cursor: pointer; }
+
+  /* top centre: what Honk thinks and what happens, as alerts that drop in */
+  #alerts { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); width: min(640px, calc(100vw - 800px)); display: flex; flex-direction: column; gap: 8px; z-index: 6; pointer-events: none; }
+  .alert { display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px 13px 12px; pointer-events: auto; cursor: pointer; transform-origin: top center; animation: drop .75s var(--spring) both; position: relative; overflow: hidden; }
+  .alert.out { animation: lift .45s cubic-bezier(.5, -.6, .7, .4) forwards; }
+  .alert .aic { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 2px solid var(--ink); display: grid; place-items: center; font-size: 23px; background: #fff; animation: wobble 1.6s ease-in-out .4s 2; }
+  .alert small { display: block; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; opacity: .6; margin-bottom: 1px; }
+  .alert p { margin: 0; line-height: 1.32; font-weight: 700; overflow-wrap: anywhere; }
+  .alert.thought { background: #ffe6f7; } .alert.thought .aic { background: var(--pop); } .alert.thought p { font-style: italic; }
+  .alert.talk { background: #e3fff4; } .alert.talk .aic { background: var(--mint); }
+  .alert.you { background: #eeeaff; align-self: flex-end; max-width: 85%; } .alert.you .aic { background: var(--soft); }
+  .alert .asked { display: block; quotes: none; font-size: 14px; font-weight: 800; color: var(--accent); margin-bottom: 4px; padding: 2px 8px; background: #fff; border-radius: 10px; border: 1.5px solid var(--ink); width: fit-content; max-width: 100%; overflow-wrap: anywhere; }
+  .alert.goal { background: #fff3c4; } .alert.goal .aic { background: var(--sun); }
+  .alert .life { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--ink); opacity: .25; animation: life linear forwards; }
+  .dots { display: inline-flex; gap: 4px; padding: 6px 0 2px; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--ink); animation: hop .9s ease-in-out infinite; }
+  .dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
+
+  /* top right: the clock and how you see the world */
+  #topRight { position: fixed; top: 14px; right: 14px; display: flex; gap: 10px; align-items: flex-start; animation: popIn .7s var(--spring) .1s both; }
+  #clock { padding: 11px 18px; font-weight: 900; font-size: 18px; transform: rotate(calc(var(--tilt) * -1)); white-space: nowrap; }
+  #viewBar { display: flex; gap: 6px; padding: 6px; }
+  #drawer { position: fixed; display: flex; flex-direction: column; overflow: hidden; z-index: 5; width: 520px; max-width: calc(100vw - 32px); }
+  #drawer.right { top: 88px; right: 16px; max-height: calc(100vh - 120px); transform-origin: top right; }
+  #drawer.left { left: 16px; top: 100px; max-height: calc(100vh - 116px); transform-origin: top left; }
+  #drawer.show { animation: panelIn .55s var(--spring) both; }
+  #drawer[hidden] { display: none; }
+  #drawer > header { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px 12px 18px; color: #fff; background: var(--accent); border-bottom: var(--bw) solid var(--ink); }
+  #drawer > header .ibtn { width: 38px; height: 38px; border-radius: 10px; box-shadow: none; }
+  #drawer > header .ibtn svg.i { width: 20px; height: 20px; }
+  #drawer h2 { margin: 0; font-size: 22px; font-weight: 900; display: flex; gap: 8px; align-items: center; }
+  .tab { padding: 16px 18px; overflow-y: auto; display: grid; gap: 12px; align-content: start; flex: 0 1 auto; min-height: 0; }
+  .tab > .fresh { animation: rowIn .5s var(--soft-spring) both; }
+  /* switching panels: the frame resizes, the old content sinks away, the new content drops in from above */
+  #drawer.swapping { transition: height .4s cubic-bezier(.4, 0, .2, 1); }
+  .tab.leaving { opacity: 0; transform: translateY(22px); transition: opacity .18s ease-in, transform .18s ease-in; }
+  .tab.entering { animation: tabIn .42s cubic-bezier(.2, .8, .3, 1) both; }
+  .tab[hidden] { display: none; }
+  .tab h3 { margin: 8px 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; opacity: .65; }
+  .row { display: flex; gap: 10px; align-items: flex-start; line-height: 1.4; overflow-wrap: anywhere; }
+  .row > b:first-child { flex: none; width: 26px; text-align: center; }
+  .row small { display: block; opacity: .7; }
+  .row.th span { font-style: italic; }
+  /* the diary: a paper notebook, dashed lines between entries, a small label for what kind of thing it was */
+  #tab-thoughts { gap: 0; padding-top: 0; }
+  .dfil { position: sticky; top: 0; z-index: 2; display: flex; gap: 4px; padding: 12px 0 10px; margin-bottom: 2px; background: var(--cream); border-bottom: 2px dashed rgba(26, 16, 64, .22); flex-wrap: wrap; min-height: max-content; }
+  .dfil button { flex: none; border: 0; background: none; border-radius: 999px; padding: 6px 14px; font: 800 15px var(--font); color: var(--ink); opacity: .55; cursor: pointer; transition: background .2s, opacity .2s, transform .3s var(--spring); }
+  .dfil button:hover { opacity: .9; transform: translateY(-1px); }
+  .dfil button.on { background: var(--ink); color: #fff; opacity: 1; }
+  .dy { padding: 13px 2px 14px; border-bottom: 2px dashed rgba(26, 16, 64, .16); line-height: 1.45; overflow-wrap: anywhere; }
+  .dy header { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; font-size: 14px; min-width: 0; }
+  .dy header i { font-style: normal; font-size: 15px; width: 20px; text-align: center; }
+  .dy header b { font-weight: 800; opacity: .78; white-space: nowrap; }
+  .dy .lab { border: 1.5px solid rgba(26, 16, 64, .3); border-radius: 7px; padding: 0 8px; font-size: 13px; font-weight: 700; white-space: nowrap; background: #fff; }
+  .dy .rep { font-size: 12px; font-weight: 900; padding: 0 7px; border-radius: 999px; background: var(--soft); white-space: nowrap; }
+  .dy time { margin-left: auto; font-size: 13px; opacity: .5; white-space: nowrap; }
+  .dy .rw { font-style: normal; font-size: 12px; font-weight: 900; padding: 0 7px; border-radius: 999px; background: var(--mint); white-space: nowrap; }
+  .dy .rw.down { background: #ffc2c8; }
+  .dy .meta { font-size: 13.5px; opacity: .58; margin: 0 0 3px 27px; }
+  .dy p { margin: 0 0 0 27px; font-size: 16px; }
+  .dy.th p { font-style: italic; opacity: .9; }
+  .dy.g-make header b { color: var(--accent); opacity: 1; }
+  .dy.g-make .lab { border-color: var(--accent); color: var(--accent); }
+  .row.talk span { font-style: normal; }
+  .tags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .arts { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .art { display: block; border: 2px solid var(--ink); border-radius: calc(var(--r) * .6); overflow: hidden; background: #fff; color: var(--ink); text-decoration: none; font-size: 12px; font-weight: 800; }
+  .art img { display: block; width: 100%; aspect-ratio: 1; }
+  .art span { display: block; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .post { display: grid; grid-template-columns: 34px 1fr; gap: 9px; border: 2px solid var(--ink); border-radius: calc(var(--r) * .6); padding: 10px 11px; background: #fff; line-height: 1.4; overflow-wrap: anywhere; }
+  .post.mine { background: var(--soft); }
+  .post .av { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--ink); display: grid; place-items: center; color: #fff; font-size: 14px; }
+  .post header small { opacity: .6; }
+  .post p { margin: 4px 0; }
+  .post img { display: block; width: 100%; max-width: 260px; border: 2px solid var(--ink); border-radius: calc(var(--r) * .5); margin: 6px 0; }
+  .post .rep { font-size: 13px; border-left: 3px solid var(--soft); padding-left: 8px; }
+  .post .rep.me, .post .dm.me { border-color: var(--sun); }
+  .post .dm { font-size: 14px; border-left: 3px solid var(--sky); padding-left: 8px; }
+  .tag { border: 2px solid var(--ink); border-radius: 999px; padding: 2px 11px; font-size: 14px; font-weight: 800; background: #fff; transition: transform .3s var(--spring); }
+  .tag:hover { transform: translateY(-2px) rotate(-3deg); }
+  .note { font-size: 14px; opacity: .8; border-left: 3px solid var(--pop); padding-left: 10px; line-height: 1.45; overflow-wrap: anywhere; }
+  .self { line-height: 1.4; }
+  .entry { border: 2px solid var(--ink); border-radius: calc(var(--r) * .6); padding: 11px 13px; background: #fff; line-height: 1.5; }
+  .entry b { display: block; margin-bottom: 3px; }
+  .meter { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; font-weight: 800; }
+  .meter .bar { margin: 0; }
+  .meter small { font-weight: 700; opacity: .6; }
+  .love { display: flex; gap: 10px; align-items: center; border: 2px solid var(--ink); border-radius: 12px; padding: 8px 12px; background: #fff; }
+  .love b { font-size: 19px; } .love span { flex: 1; line-height: 1.3; } .love small { display: block; opacity: .65; font-weight: 500; }
+  .love.bad { background: #fff0f2; }
+  .tab label { display: grid; gap: 5px; font-weight: 800; }
+  .tab input[type=range] { width: 100%; accent-color: var(--accent); }
+  .tab .v { font-weight: 400; opacity: .7; }
+  kbd { border: 1.5px solid var(--ink); border-bottom-width: 3px; border-radius: 5px; padding: 0 4px; font: 800 14px ui-monospace, monospace; background: #fff; }
+
+  /* very top left: Honk's things */
+  #honkBar { position: fixed; top: 12px; left: 14px; display: flex; gap: 4px; z-index: 6; }
+  .dbtn { width: 64px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; border: 0; background: none; position: relative; animation: popIn .6s var(--spring) both; }
+  .dbtn:nth-child(2) { animation-delay: .05s; } .dbtn:nth-child(3) { animation-delay: .1s; } .dbtn:nth-child(4) { animation-delay: .15s; } .dbtn:nth-child(5) { animation-delay: .2s; } .dbtn:nth-child(6) { animation-delay: .25s; }
+  .dbtn .ic { width: 54px; height: 54px; border-radius: 17px; border: var(--bw) solid var(--ink); background: var(--c, var(--soft)); display: grid; place-items: center; box-shadow: 0 4px 0 var(--ink);
+              transition: transform .45s var(--spring), box-shadow .2s; }
+  .dbtn .ic svg.i { width: 29px; height: 29px; stroke-width: 2.3; }
+  .dbtn > span { font-size: 13px; font-weight: 900; color: #fff; text-shadow: 0 1.5px 0 var(--ink), 1px 0 0 var(--ink), -1px 0 0 var(--ink), 0 -1px 0 var(--ink); white-space: nowrap; }
+  .dbtn:hover .ic { transform: translateY(3px) rotate(-6deg) scale(1.08); }
+  .dbtn:nth-child(even):hover .ic { transform: translateY(3px) rotate(6deg) scale(1.08); }
+  .dbtn:active .ic { transform: translateY(2px) scale(.88); box-shadow: 0 1px 0 var(--ink); transition-duration: .08s; }
+  .dbtn.on .ic { transform: translateY(2px); box-shadow: 0 0 0 3px #fff, 0 6px 0 var(--ink); }
+  .dbtn.wiggle .ic { animation: wiggle .8s var(--spring); }
+  .badge { position: absolute; top: -6px; right: -2px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 999px; background: #ff4f6d; color: #fff; border: 2px solid var(--ink); font-size: 12px; font-weight: 900; display: grid; place-items: center; font-style: normal; }
+  .badge:empty { display: none; }
+  .badge.pop { animation: boing .6s var(--spring); }
+
+  /* right: a little terminal with the code Honk is typing right now */
+  #term { position: fixed; right: 16px; top: 88px; width: 480px; max-height: calc(100vh - 180px); display: flex; flex-direction: column; overflow: hidden; z-index: 4; background: #15102e; border-color: var(--ink);
+          transform-origin: top right; animation: panelIn .5s var(--spring); }
+  #term header { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 12px; background: #2a2160; color: #fff; border-bottom: 2px solid var(--ink); font: 800 13px var(--font); }
+  #term header .dots3 { display: flex; gap: 5px; } #term header .dots3 i { width: 11px; height: 11px; border-radius: 50%; background: #ff6b6b; border: 1.5px solid var(--ink); }
+  #term header .dots3 i:nth-child(2) { background: var(--sun); } #term header .dots3 i:nth-child(3) { background: var(--mint); }
+  #termTitle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, Consolas, monospace; font-weight: 700; }
+  #term header button { border: 0; background: none; color: #fff; opacity: .7; font: 900 16px var(--font); padding: 0 4px; } #term header button:hover { opacity: 1; }
+  #termBody { margin: 0; padding: 10px 12px 12px 0; font: 12.5px/1.5 ui-monospace, "JetBrains Mono", Consolas, monospace; color: #e8e4ff; overflow: auto; flex: 1; min-height: 120px; white-space: pre; tab-size: 2; scrollbar-width: thin; scrollbar-color: #4b47d6 transparent; }
+  #termBody .ln { display: block; padding-left: 50px; position: relative; min-height: 1.5em; }
+  #termBody .ln::before { content: attr(data-n); position: absolute; left: 0; width: 38px; text-align: right; color: #6b62b8; }
+  #termBody .cur { display: inline-block; width: 8px; height: 1.1em; vertical-align: -2px; background: var(--mint); animation: blink 1s steps(2) infinite; }
+  #termBody .k { color: #ff8fd8; } #termBody .s { color: #ffd23f; } #termBody .c { color: #7f78b8; font-style: italic; } #termBody .t { color: #9fd8ff; } #termBody .n { color: #ffb36b; } #termBody .a { color: #7ff0c6; }
+  #term footer { display: flex; gap: 12px; padding: 6px 12px; border-top: 2px solid #2a2160; color: #b9b2ff; font: 700 12px ui-monospace, Consolas, monospace; }
+  #term footer span:last-child { margin-left: auto; }
+  #term.done footer { color: var(--mint); }
+
+  /* bottom centre: say something to Honk */
+  #ask { position: fixed; left: max(400px, calc(50% - 300px)); bottom: 18px; width: min(600px, calc(100vw - 416px)); display: flex; gap: 8px; align-items: center; padding: 8px 8px 8px 18px; border-radius: 999px;
+         transition: transform .45s var(--spring), box-shadow .3s; animation: popIn .7s var(--spring) .35s both; }
+  #ask:focus-within { transform: translateY(-4px) scale(1.03); box-shadow: var(--sh) calc(var(--sh) + 2px) 0 var(--ink); }
+  #ask > .ic { color: var(--accent); }
+  #askIn { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-weight: 700; font-size: 18px; padding: 8px 0; }
+  #askIn::placeholder { color: var(--ink); opacity: .45; }
+  #askGo { border-radius: 50%; background: var(--accent); color: #fff; }
+  #askGo:hover { background: var(--pop); color: var(--ink); }
+  #askGo.busy svg { animation: spinHop 1s var(--spring) infinite; }
+  #ask.shake { animation: shake .4s; }
+
+  #hint { position: fixed; bottom: 18px; right: 16px; color: #fff; font-weight: 800; text-shadow: 0 2px 0 var(--ink); pointer-events: none; text-align: right; opacity: .85; max-width: 300px; line-height: 1.35; font-size: 15px; }
+  #tip { position: fixed; pointer-events: none; padding: 7px 13px; font-weight: 800; font-size: 15px; max-width: 340px; border-radius: calc(var(--r) * .6); z-index: 7; animation: tipIn .3s var(--spring); }
+  #tip small { display: block; font-weight: 500; opacity: .75; }
+  #tip small.fx { opacity: 1; color: #6a3fd0; font-weight: 700; }
+  .rw { font-style: normal; font-weight: 900; font-size: 12px; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #d9f7e6; color: #156b3a; }
+  .rw.down { background: #ffe0e4; color: #a0182c; }
+  /* the little sign over Honk's head: what he is doing right now */
+  #bubble { position: fixed; pointer-events: none; transform: translate(-50%, -100%); width: 40px; height: 40px; border-radius: 50% 50% 50% 8px; border: var(--bw) solid var(--ink); background: #fff; box-shadow: 2px 3px 0 var(--ink); display: grid; place-items: center; transition: transform .3s var(--spring); }
+  #bIcon { font-size: 20px; display: inline-block; }
+  #bubble.busy #bIcon { animation: bob 1s ease-in-out infinite; }
+  #bubble.ping { animation: boingB .6s var(--spring); }
+  #play { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(26, 16, 64, .55); backdrop-filter: blur(3px); }
+  #play[hidden] { display: none; }
+  #play > .card { width: min(1100px, calc(100vw - 32px)); height: min(760px, calc(100vh - 48px)); display: flex; flex-direction: column; overflow: hidden; animation: panelIn .5s var(--spring); }
+  #play header { display: flex; gap: 12px; align-items: center; padding: 10px 12px 10px 18px; background: var(--accent); color: #fff; border-bottom: var(--bw) solid var(--ink); }
+  #play header b { font-size: 20px; font-weight: 900; white-space: nowrap; }
+  #play header small { flex: 1; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #play header .chip { color: var(--ink); text-decoration: none; font-size: 13px; }
+  #play header .ibtn { width: 38px; height: 38px; border-radius: 10px; box-shadow: none; }
+  #play iframe { flex: 1; border: 0; width: 100%; background: #1a1040; }
+  .float { position: fixed; pointer-events: none; font-weight: 900; font-size: 20px; color: #fff; text-shadow: 0 2px 0 var(--ink), 0 0 6px var(--ink); animation: rise 1.3s ease-out forwards; z-index: 4; }
+  [hidden] { display: none !important; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 50% { transform: scale(1.18); } }
+  @keyframes blink { 50% { opacity: 0; } }
+  @keyframes bob { 50% { transform: translateY(-3px) scale(1.08); } }
+  @keyframes hop { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+  @keyframes rise { to { transform: translateY(-60px); opacity: 0; } }
+  @keyframes popIn { from { transform: scale(.4) translateY(20px); opacity: 0; } }
+  @keyframes popUp { from { transform: translateX(-50%) translateY(60px) scale(.7); opacity: 0; } }
+  @keyframes drop { 0% { transform: translateY(-130%) scale(.7) rotate(-3deg); opacity: 0; } 55% { transform: translateY(6%) scale(1.04) rotate(1deg); opacity: 1; } 78% { transform: translateY(-2%) scale(.99); } 100% { transform: none; } }
+  @keyframes lift { to { transform: translateY(-120%) scale(.8) rotate(2deg); opacity: 0; margin-bottom: -60px; } }
+  @keyframes panelIn { 0% { transform: scale(.5) translateY(30px); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; } }
+  @keyframes tabIn { from { transform: translateY(-26px); opacity: 0; } }
+  @keyframes rowIn { from { transform: translateY(10px) scale(.96); opacity: 0; } }
+  @keyframes tipIn { from { transform: scale(.7); opacity: 0; } }
+  @keyframes boing { 0% { transform: scale(1); } 30% { transform: scale(1.45) rotate(-8deg); } 60% { transform: scale(.85) rotate(4deg); } 100% { transform: scale(1); } }
+  @keyframes boingB { 0% { transform: translate(-50%, -100%) scale(1); } 35% { transform: translate(-50%, -100%) scale(1.35); } 70% { transform: translate(-50%, -100%) scale(.9); } }
+  @keyframes wobble { 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+  @keyframes wiggle { 0%, 100% { transform: none; } 20% { transform: rotate(-12deg) scale(1.1); } 40% { transform: rotate(10deg) scale(1.1); } 60% { transform: rotate(-6deg); } 80% { transform: rotate(3deg); } }
+  @keyframes tada { 0% { transform: rotate(var(--tilt)); } 20% { transform: scale(1.08) rotate(-3deg); } 40% { transform: scale(1.08) rotate(3deg); } 60% { transform: scale(1.05) rotate(-2deg); } 100% { transform: rotate(var(--tilt)); } }
+  @keyframes shake { 25% { margin-left: -6px; } 75% { margin-left: 6px; } }
+  @keyframes spinHop { 50% { transform: translate(2px, -3px) rotate(-12deg); } }
+  @keyframes life { from { width: 100%; } to { width: 0; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+
+  @media (max-width: 1800px) { #alerts { top: 90px; } }   /* eight buttons in the top bar: the alerts drop in below it */
+  @media (max-width: 1320px) {
+    #hint { display: none; }
+    #alerts { left: 420px; right: 16px; transform: none; width: auto; top: 90px; max-width: 640px; }
+    #term { width: 400px; }
+  }
+  @media (max-width: 760px) {
+    #honkCard { width: auto; right: 14px; bottom: 84px; padding: 10px; } #flow { display: none; }
+    #topRight { flex-direction: column; align-items: flex-end; } #clock { font-size: 12px; padding: 6px 10px; }
+    #alerts { left: 14px; right: 14px; top: auto; bottom: 200px; max-width: none; }
+    #honkBar { left: 8px; right: 8px; justify-content: space-between; } .dbtn { width: auto; flex: 1; } .dbtn .ic { width: 44px; height: 44px; } .dbtn > span { font-size: 10px; }
+    #topRight { top: 90px; }
+    #ask { left: 14px; right: 14px; width: auto; max-width: none; bottom: 14px; }
+    #drawer.left, #drawer.right { left: 14px; right: 14px; width: auto; top: 120px; bottom: auto; max-height: calc(100vh - 300px); }
+    #term { display: none; }
+    body.panel-open #alerts { display: none; }   /* no room for both; everything is in the Thoughts panel too */
+  }
+  details summary { list-style: none; } details summary::before { content: '▸ '; } details[open] summary::before { content: '▾ '; }
+</style>
+</head>
+<body>
+<nav id="honkBar">
+  <button class="dbtn" data-tab="questions" style="--c: var(--mint)"><i class="ic" data-icon="ideas"></i><span>Questions</span><em class="badge"></em></button>
+  <button class="dbtn" data-tab="cargo" style="--c: var(--sun)"><i class="ic" data-icon="work"></i><span>Cargo</span><em class="badge"></em></button>
+  <button class="dbtn" data-tab="vault" style="--c: var(--peach)"><i class="ic" data-icon="vault"></i><span>Vault</span><em class="badge"></em></button>
+  <button class="dbtn" data-tab="made" style="--c: var(--pop)"><i class="ic" data-icon="hobbies"></i><span>Made</span><em class="badge"></em></button>
+  <button class="dbtn" data-tab="journal" style="--c: var(--pop)"><i class="ic" data-icon="journal"></i><span>Journal</span><em class="badge"></em></button>
+  <button class="dbtn" data-tab="postcards" style="--c: var(--sky)"><i class="ic" data-icon="card"></i><span>Postcards</span><em class="badge"></em></button>
+  <button class="dbtn" data-tab="mind" style="--c: var(--soft)"><i class="ic" data-icon="mind"></i><span>Mind</span><em class="badge"></em></button>
+  <button class="dbtn" data-tab="thoughts" style="--c: var(--sky)"><i class="ic" data-icon="thoughts"></i><span>Diary</span><em class="badge"></em></button>
+</nav>
+<div id="alerts" aria-live="polite"></div>
+<div id="topRight">
+  <button id="mindPill" class="card" title="Pause Honk, or let him go on">connecting…</button>
+  <div id="clock" class="card">🌙 08:00 · Day 1</div>
+  <nav id="viewBar" class="card">
+    <button id="follow" class="ibtn" data-icon="follow"><span class="lbl">Follow Honk</span></button>
+    <button class="ibtn" data-tab="view" data-icon="eye"><span class="lbl">View settings</span></button>
+  </nav>
+</div>
+<aside id="drawer" class="card" hidden>
+  <header><h2 id="dTitle"></h2><button id="dClose" class="ibtn" data-icon="close" title="Close (Esc)"></button></header>
+  <div class="tab" id="tab-questions" hidden></div>
+  <div class="tab" id="tab-cargo" hidden></div>
+  <div class="tab" id="tab-vault" hidden></div>
+  <div class="tab" id="tab-made" hidden></div>
+  <div class="tab" id="tab-journal" hidden></div>
+  <div class="tab" id="tab-postcards" hidden></div>
+  <div class="tab" id="tab-mind" hidden></div>
+  <div class="tab" id="tab-thoughts" hidden></div>
+  <div class="tab" id="tab-view" hidden>
+    <div class="note">Honk is a fictional AI character. What he writes is generated by a language model and can be wrong. Do not send him private information. You watch from above; these settings only change how you see the Moon.</div>
+    <h3>Moving</h3>
+    <div class="row"><b>✨</b><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · <kbd>Q</kbd><kbd>E</kbd> down / up · hold <kbd>Shift</kbd> to go faster.</span></div>
+    <div class="row"><b>🖱️</b><span>Left-drag to look around · middle-drag or Shift + left-drag to pan · scroll to zoom. Right-click turns all hover labels off, and on again. <kbd>Enter</kbd> jumps to the postcard field.</span></div>
+    <h3>Look</h3>
+    <label>Dither size <span class="v" id="vPix"></span><input id="pix" type="range" min="1" max="5" step="1" value="4"></label>
+    <label>Light steps far away <span class="v" id="vLev"></span><input id="lev" type="range" min="3" max="16" step="1" value="16"></label>
+    <label>Light steps up close <span class="v" id="vNear"></span><input id="near" type="range" min="2" max="12" step="0.2" value="3.8"></label>
+    <label>Dither strength <span class="v" id="vDit"></span><input id="dit" type="range" min="0" max="1.5" step="0.05" value="0.7"></label>
+    <label>Outlines <span class="v" id="vOut"></span><input id="out" type="range" min="0" max="1" step="0.05" value="1"></label>
+    <label>God rays <span class="v" id="vRay"></span><input id="ray" type="range" min="0" max="3" step="0.05" value="1"></label>
+    <label>Glow <span class="v" id="vBlo"></span><input id="blo" type="range" min="0" max="2" step="0.05" value="1"></label>
+    <label>Saturation <span class="v" id="vSat"></span><input id="sat" type="range" min="0.6" max="2" step="0.05" value="1.4"></label>
+    <h3>Start over</h3>
+    <div class="note">Unlike the settings above, this changes Honk: it deletes his questions, memories, vault, journal, builds and postcards, and he wakes up new. It cannot be undone.</div>
+    <button id="eraseAll" class="chip danger">🗑️ Erase everything</button>
+  </div>
+</aside>
+<section id="honkCard" class="card">
+  <header><div id="face" title="How Honk feels"><span id="mood">🙂</span></div><div class="who"><h1>Honk <span id="moodWord">content</span></h1><p id="statusText">Honk is waking up</p></div></header>
+  <div id="drives"></div>
+  <div id="flow" title="The question on Honk's mind, the ones waiting behind it, and the cargo window. He asks his questions himself."></div>
+</section>
+<form id="ask" class="card" autocomplete="off"><span class="ic" data-icon="chat"></span><input id="askIn" maxlength="500" placeholder="Write Honk a postcard…" aria-label="Write Honk a postcard"><button id="askGo" class="ibtn" data-icon="send" title="Send (Enter)"></button></form>
+<div id="hint"></div>
+<div id="tip" class="card" hidden></div>
+<div id="bubble"><span id="bIcon">🌙</span></div>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// Honk, the keeper on the Moon. His life runs on the server (src/honk/); this page is the window onto it.
+// The look (dither, outlines, palette, panels) is the same as on the island: see World/archive/island-2/.
+const MOBILE = matchMedia('(pointer: coarse)').matches || innerWidth < 700;
+const WATER_Y = -0.45;
+
+// ---------------------------------------------------------------- helpers
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp01 = x => Math.min(1, Math.max(0, x));
+const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+function hash2(x, y, s) { const h = Math.sin(x * 127.1 + y * 311.7 + s * 74.7) * 43758.5453; return h - Math.floor(h); }
+function vnoise(x, y, s = 0) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash2(xi, yi, s), b = hash2(xi + 1, yi, s), c = hash2(xi, yi + 1, s), d = hash2(xi + 1, yi + 1, s);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+function fbm(x, y, s = 0, o = 4) { let f = 0, amp = 0.5, fr = 1; for (let i = 0; i < o; i++) { f += amp * vnoise(x * fr, y * fr, s + i * 17); amp *= 0.5; fr *= 2; } return f / (1 - Math.pow(0.5, o)); }
+function distSeg(px, pz, ax, az, bx, bz) { const vx = bx - ax, vz = bz - az; const t = clamp01(((px - ax) * vx + (pz - az) * vz) / (vx * vx + vz * vz)); return Math.hypot(px - ax - vx * t, pz - az - vz * t); }
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const C = hex => new THREE.Color(hex);
+
+const GLSL_NOISE = `
+float hash21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3. - 2. * f);
+  return mix(mix(hash21(i), hash21(i + vec2(1., 0.)), u.x), mix(hash21(i + vec2(0., 1.)), hash21(i + vec2(1., 1.)), u.x), u.y); }
+float fbm(vec2 p){ float f = 0., a = .5; for (int i = 0; i < 5; i++) { f += a * vnoise(p); p *= 2.03; a *= .5; } return f / .97; }
+`;
+
+// shared uniforms, updated once per frame
+const U = {
+  uTime: { value: 0 }, uWind: { value: 1 }, uNight: { value: 0 },
+  uSun: { value: new THREE.Color() }, uAmb: { value: new THREE.Color() }, uLight: { value: new THREE.Color(1, 1, 1) },
+  // the dither: x = cell size in device pixels, y = shades far away, z = shades up close, w = strength (0 = off)
+  uDither: { value: new THREE.Vector4(4, 16, 3.8, 0.7) },
+};
+function shaderMat({ uniforms = {}, shared = [], ...rest }) {
+  const m = new THREE.ShaderMaterial({ fog: true, uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, uniforms]), ...rest });
+  for (const k of shared) m.uniforms[k] = U[k];
+  return m;
+}
+
+// ---------------------------------------------------------------- the dither IS the light.
+// Every lit surface keeps its own colour; only the light falling on it (sun, sky, shadow) is cut into a few
+// brightness steps and blended with an 8x8 Bayer pattern in screen space. Close up there are fewer steps, so the
+// pattern is bold; far away there are more, so it calms down. The darkest step is never black, so things stay readable.
+const DITHER_GLSL = `
+uniform vec4 uDither;
+float bayer2(vec2 a){ a = floor(a); return fract(a.x / 2. + a.y * a.y * .75); }
+float bayer4(vec2 a){ return bayer2(.5 * a) * .25 + bayer2(a); }
+float bayer8(vec2 a){ return bayer4(.5 * a) * .25 + bayer2(a); }
+vec3 ditherLight(vec3 light, float dist){
+  float m = max(max(light.r, light.g), light.b);
+  if (uDither.w < .01 || m < 1e-4) return light;
+  float L = mix(uDither.y, uDither.z, 1. - smoothstep(4., 70., dist));
+  float sq = sqrt(m), b = (bayer8(gl_FragCoord.xy / uDither.x) - .5) * uDither.w;
+  float q = max(floor(sq * L + .5 + b) / L, sq * .55);
+  return light / m * q * q;
+}
+`;
+// patch a Lambert material so its lighting goes through ditherLight (keeps any onBeforeCompile it already has)
+function ditherLit(mat) {
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = (sh, r) => {
+    prev.call(mat, sh, r);
+    sh.uniforms.uDither = U.uDither;
+    sh.fragmentShader = DITHER_GLSL + sh.fragmentShader.replace(
+      'vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + totalEmissiveRadiance;',
+      `vec3 dAlb = max(diffuseColor.rgb, vec3(.004));
+      vec3 outgoingLight = dAlb * ditherLight((reflectedLight.directDiffuse + reflectedLight.indirectDiffuse) / dAlb, length(vViewPosition)) + totalEmissiveRadiance;`);
+  };
+  mat.customProgramCacheKey = () => 'dither|' + prev.toString();
+  return mat;
+}
+const Lambert = o => ditherLit(new THREE.MeshLambertMaterial(o));
+
+// ---------------------------------------------------------------- renderer, scene, camera
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0xc4ecff, 0.01);
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 1000);
+camera.position.set(44, 30, 46);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 0); controls.enableDamping = true;
+controls.autoRotate = false;
+// left-drag orbits, middle-drag (or Shift + left-drag) pans, scroll zooms; the right button is kept for the label toggle
+controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: null };
+controls.minDistance = 6; controls.maxDistance = 170; controls.maxPolarAngle = Math.PI * 0.8;
+
+const hemi = new THREE.HemisphereLight(0xbfe6ff, 0x4f7a3a, 1.5);
+scene.add(hemi);
+const key = new THREE.DirectionalLight(0xffffff, 3);
+key.castShadow = true;
+key.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048);
+Object.assign(key.shadow.camera, { left: -46, right: 46, top: 46, bottom: -46, near: 1, far: 220 });
+key.shadow.bias = -0.0005; key.shadow.normalBias = 0.04;
+scene.add(key, key.target);
+controls.maxPolarAngle = Math.PI * 0.495; controls.target.set(0, 1, 2);
+const $ = id => document.getElementById(id);
+const terrainMat = Lambert({ vertexColors: true, side: THREE.DoubleSide });
+const rockMat = Lambert({ vertexColors: true, flatShading: true, side: THREE.DoubleSide });
+
+// ---------------------------------------------------------------- recipes (Honk-style)
+const PAL = {
+  navy: '#1a1040', indigo: '#2d2a8c', violet: '#4b47d6', lavender: '#c9c2ff', white: '#ffffff',
+  yellow: '#ffd23f', wood: '#e9c79a', roof: '#e0369e', plum: '#7a2a8f',
+};
+const GEO = {
+  box: () => new THREE.BoxGeometry(1, 1, 1), sphere: () => new THREE.SphereGeometry(1, 20, 14),
+  cylinder: () => new THREE.CylinderGeometry(1, 1, 1, 12), cone: () => new THREE.ConeGeometry(1, 1, 16),
+  pyramid: () => new THREE.ConeGeometry(1, 1, 4),
+};
+const GLOWS = [];
+function build(recipe) {
+  const g = new THREE.Group();
+  for (const p of recipe.parts) {
+    const color = C(PAL[p.color] || PAL.violet);
+    const mat = p.glow ? new THREE.MeshBasicMaterial({ color }) : Lambert({ color });
+    if (p.glow) { mat.userData.base = color.clone(); GLOWS.push(mat); }
+    const m = new THREE.Mesh(GEO[p.shape](), mat);
+    m.position.fromArray(p.pos || [0, 0, 0]);
+    m.rotation.set(...(p.rot || [0, 0, 0]).map(THREE.MathUtils.degToRad));
+    m.scale.fromArray(p.scale || [1, 1, 1]);
+    m.castShadow = !p.glow; m.receiveShadow = true;
+    g.add(m);
+  }
+  return g;
+}
+const LANTERN = { parts: [
+  { shape: 'cylinder', pos: [0, 0.8, 0], scale: [0.06, 1.6, 0.06], color: 'navy' },
+  { shape: 'box', pos: [0, 1.7, 0], scale: [0.26, 0.3, 0.26], color: 'yellow', glow: true },
+  { shape: 'pyramid', pos: [0, 1.95, 0], rot: [0, 45, 0], scale: [0.25, 0.2, 0.25], color: 'navy' },
+]};
+Object.assign(PAL, { stone: '#a9acd0', dark: '#4a4e7a', bark: '#8a5a3a', cream: '#fff4d6', pink: '#ff8fd8', magenta: '#e0369e', orange: '#ff8a3d', red: '#e8384f',
+  teal: '#1fb5a6', mint: '#7ff0c6', lime: '#b6f04a', periwinkle: '#8a86f0', green: '#3f8a2a' });
+function vertexColorsFor(geo, fn) {
+  const pos = geo.attributes.position, cols = new Float32Array(pos.count * 3), c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) { fn(c, pos.getX(i), pos.getY(i), pos.getZ(i)); cols.set([c.r, c.g, c.b], i * 3); }
+  geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+}
+function blobGeo(detail, amp, s, lo, hi) {
+  const g = new THREE.IcosahedronGeometry(1, detail), pos = g.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i); v.multiplyScalar(1 + amp * (vnoise(v.x * 1.7 + s, v.y * 1.7 + v.z, s) - 0.5)); pos.setXYZ(i, v.x, v.y, v.z); }
+  vertexColorsFor(g, (c, x, y) => c.lerpColors(C(lo), C(hi), smooth(-1, 1, y)));
+  g.computeVertexNormals();
+  return g;
+}
+// every shape is 1 unit across and centred on its own middle (the torus is thin front to back)
+const rboxGeo = (() => { const h = 0.38, sh = new THREE.Shape().moveTo(-h, -h).lineTo(h, -h).lineTo(h, h).lineTo(-h, h).closePath();
+  return new THREE.ExtrudeGeometry(sh, { depth: 0.76, bevelEnabled: true, bevelSize: 0.12, bevelThickness: 0.12, bevelSegments: 3 }).translate(0, 0, -0.38); })();
+const wedgeGeo = (() => { const sh = new THREE.Shape().moveTo(-0.5, -0.5).lineTo(0.5, -0.5).lineTo(0, 0.5).closePath();   // a roof or a ramp: a triangle seen from the front
+  return new THREE.ExtrudeGeometry(sh, { depth: 1, bevelEnabled: false }).translate(0, 0, -0.5); })();
+const UNIT_GEO = {
+  box: new THREE.BoxGeometry(1, 1, 1), rbox: rboxGeo, sphere: new THREE.SphereGeometry(0.5, 18, 12),
+  dome: new THREE.SphereGeometry(0.5, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 2, 1).translate(0, -0.5, 0),   // half a ball, flat side down
+  cylinder: new THREE.CylinderGeometry(0.5, 0.5, 1, 14), taper: new THREE.CylinderGeometry(0.25, 0.5, 1, 14),   // wide at the bottom, half as wide on top
+  cone: new THREE.ConeGeometry(0.5, 1, 14), pyramid: new THREE.ConeGeometry(0.5, 1, 4), wedge: wedgeGeo, torus: new THREE.TorusGeometry(0.35, 0.15, 10, 24),
+};
+
+// ---------------------------------------------------------------- sky: space. Stars, the band of the galaxy, the Sun, and the Earth hanging over the Lookout.
+// There is no air, so there is no gradient and no fog: the post pass dithers it like everything else.
+const EARTH_DIR = new THREE.Vector3(0.5, 0.52, 0.69).normalize();
+const SKY = {
+  uSunCol: { value: new THREE.Color() }, uSunDir: { value: new THREE.Vector3() }, uEarthDir: { value: EARTH_DIR }, uStars: { value: 1 }, uTime: U.uTime,
+};
+const sky = new THREE.Mesh(new THREE.SphereGeometry(400, 48, 24), new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, depthTest: false, uniforms: SKY,
+  vertexShader: `varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
+  fragmentShader: `
+    uniform vec3 uSunCol, uSunDir, uEarthDir; uniform float uStars, uTime;
+    varying vec3 vDir;
+    ${GLSL_NOISE}
+    float hash31(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+    void main(){
+      vec3 d = normalize(vDir);
+      vec3 col = vec3(.006, .006, .02);
+      float band = exp(-pow(dot(d, normalize(vec3(.35, .8, -.45))) * 3.2, 2.));
+      col += vec3(.045, .03, .1) * band * (.3 + .7 * fbm(d.xz * 5. + d.y * 3.));
+      float s = hash31(floor(d * 240.));
+      col += step(.9962, s) * uStars * (.55 + .45 * sin(uTime * 1.6 + s * 500.)) * 1.5 * mix(vec3(.8, .9, 1.), vec3(1., .9, .75), fract(s * 91.));
+      float s2 = hash31(floor(d * 80.));
+      col += step(.9984, s2) * uStars * 2.6 * vec3(1., .95, .9);
+      float sd = max(dot(d, uSunDir), 0.);
+      col += uSunCol * (pow(sd, 2500.) * 40. + pow(sd, 220.) * .5 + pow(sd, 12.) * .04);
+      // the Earth: a small lit ball, blue and white, with its day side turned to the Sun
+      float ed = dot(d, uEarthDir), er = .9955;
+      if (ed > er) {
+        vec3 u = normalize(cross(uEarthDir, vec3(0., 1., 0.))), v = cross(u, uEarthDir);
+        vec2 p = vec2(dot(d, u), dot(d, v)) / sqrt(1. - er * er);
+        float r = min(length(p), 1.), z = sqrt(1. - r * r);
+        vec3 n = normalize(u * p.x + v * p.y - uEarthDir * z);
+        float land = fbm(p * 2.6 + 7.), cloud = fbm(p * 4.5 + vec2(uTime * .004, 3.));
+        vec3 ec = mix(vec3(.04, .2, .75), vec3(.12, .5, .22), smoothstep(.5, .6, land));
+        ec = mix(ec, vec3(1.), smoothstep(.52, .72, cloud) * .85);
+        float lit = smoothstep(-.15, .35, dot(n, uSunDir));
+        col = ec * (.02 + 1.5 * lit) + vec3(.25, .55, 1.) * pow(r, 7.) * .7 * (.15 + lit);
+      } else col += vec3(.15, .35, 1.) * smoothstep(er - .006, er, ed) * .35;
+      gl_FragColor = vec4(col, 1.);
+    }`,
+}));
+sky.renderOrder = -1; sky.frustumCulled = false;
+scene.add(sky);
+scene.fog.density = 0;
+
+// ================================================================ THE MOON: grey dust, craters, a curved horizon. Sections come from the server.
+const REG_LO = C('#4a4e7a'), REG_HI = C('#c2c4e4'), REG_DUST = C('#8f93bd');
+const CRATERS = (() => { const r = rng(808), out = [];
+  for (let i = 0; i < 46; i++) { const a = r() * 6.283, d = 6 + Math.sqrt(r()) * 100, rad = 1.2 + r() * r() * 9; out.push({ x: Math.cos(a) * d, z: Math.sin(a) * d, r: rad, depth: 0.25 + rad * 0.14 }); }
+  return out; })();
+let FLATS = [];   // the sections: flat, clear ground
+function rawHeight(x, z) {
+  let h = (fbm(x * 0.045 + 3, z * 0.045 - 5, 11) - 0.5) * 1.3 + (fbm(x * 0.2, z * 0.2, 4, 3) - 0.5) * 0.3;
+  for (const c of CRATERS) {
+    const d = Math.hypot(x - c.x, z - c.z) / c.r;
+    if (d < 2) { const k = (d - 1) / 0.22; h += c.depth * 0.4 * Math.exp(-k * k) - (d < 1 ? c.depth * (1 - d * d) : 0); }   // a bowl with a raised rim
+  }
+  return h;
+}
+function ground(x, z) {
+  let h = rawHeight(x, z);
+  for (const s of FLATS) { const d = Math.hypot(x - s.x, z - s.z); if (d < s.r * 1.5) h = lerp(s.y, h, smooth(s.r * 1.02, s.r * 1.5, d)); }
+  const rr = Math.hypot(x, z);
+  return h - (rr > 40 ? (rr - 40) ** 2 / 150 : 0);   // the ground falls away toward the horizon: a small world
+}
+const main = { group: new THREE.Group() };
+scene.add(main.group);
+const flowerMats = [], DIM = [], statics = [];
+const fireflyMat = { uniforms: { uSize: { value: 1 } } };
+let moonMesh = null;
+function makeMoon() {
+  const R = 125, rings = 110, segs = 200, tp = [0, ground(0, 0), 0], ti = [];
+  for (let i = 1; i <= rings; i++) for (let j = 0; j < segs; j++) {
+    const th = j / segs * Math.PI * 2, rr = Math.pow(i / rings, 1.5) * R, x = Math.cos(th) * rr, z = Math.sin(th) * rr;
+    tp.push(x, ground(x, z), z);
+  }
+  const id = (i, j) => 1 + (i - 1) * segs + (j % segs);
+  for (let j = 0; j < segs; j++) ti.push(0, id(1, j + 1), id(1, j));
+  for (let i = 1; i < rings; i++) for (let j = 0; j < segs; j++) ti.push(id(i, j), id(i, j + 1), id(i + 1, j), id(i, j + 1), id(i + 1, j + 1), id(i + 1, j));
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(tp, 3)); geo.setIndex(ti);
+  vertexColorsFor(geo, (c, x, y, z) => {
+    const n = fbm(x * 0.09 + 1, z * 0.09, 21), raw = rawHeight(x, z);
+    c.lerpColors(REG_LO, REG_HI, clamp01(0.45 + raw * 0.22 + (n - 0.5) * 0.6));
+    if (FLATS.some(s => Math.hypot(x - s.x, z - s.z) < s.r)) c.lerp(REG_DUST, 0.5);
+  });
+  geo.computeVertexNormals();
+  if (moonMesh) { main.group.remove(moonMesh); moonMesh.geometry.dispose(); unhang(moonMesh); }
+  moonMesh = new THREE.Mesh(geo, terrainMat); moonMesh.receiveShadow = true; moonMesh.userData.ent = { kind: 'ground' };
+  main.group.add(moonMesh); statics.push(moonMesh);
+}
+
+// rocks: scattered once the sections are known, clear of them and of the paths between them
+const ROCK_GEOS = [0, 1, 2, 3].map(i => blobGeo(i % 2, 0.55, i * 3 + 2, '#3d4070', '#a9acd0'));
+function scatterRocks() {
+  const r = rng(4242), keep = (x, z, pad) => FLATS.every(s => Math.hypot(x - s.x, z - s.z) > s.r + pad) &&
+    FLATS.every((a, i) => FLATS.slice(i + 1).every(b => distSeg(x, z, a.x, a.z, b.x, b.z) > 1.6 + pad));
+  for (let i = 0, made = 0; made < 150 && i < 4000; i++) {
+    const a = r() * 6.283, d = 3 + Math.sqrt(r()) * 70, x = Math.cos(a) * d, z = Math.sin(a) * d, big = r() < 0.2, s = big ? 0.8 + r() * 1.6 : 0.12 + r() * 0.3;
+    if (!keep(x, z, s)) continue;
+    const m = new THREE.Mesh(ROCK_GEOS[Math.floor(r() * 4)], rockMat); m.scale.set(s, s * (0.55 + r() * 0.3), s); m.rotation.y = r() * 6;
+    m.position.set(x, ground(x, z) + s * 0.18, z); m.castShadow = true; m.receiveShadow = true;
+    if (big) { m.userData.ent = { kind: 'rock', name: '🪨 Moon rock', desc: 'It has been here longer than anyone.' }; statics.push(m); }
+    main.group.add(m); made++;
+  }
+}
+
+// ---------------------------------------------------------------- sections: a ring on the ground, a lamp, and what belongs there
+const SECTION_COLOR = { hatch: '#7ff0c6', vault: '#ffb36b', garden: '#ff8fd8', memorial: '#c9c2ff', lookout: '#9fd8ff', postbox: '#e0369e', nest: '#ffd23f' };
+const SECTION_ICON = { hatch: '🚪', vault: '🗄️', garden: '🌱', memorial: '🕯️', lookout: '🔭', postbox: '📮', nest: '🪺' };
+const PROPS = {
+  hatch: { parts: [
+    { shape: 'cylinder', pos: [0, 0.08, 0], scale: [3.4, 0.16, 3.4], color: 'dark' }, { shape: 'cylinder', pos: [0, 0.17, 0], scale: [2.6, 0.04, 2.6], color: 'stone' },
+    { shape: 'box', pos: [-1.0, 1.3, -2.6], scale: [0.4, 2.6, 0.5], color: 'indigo' }, { shape: 'box', pos: [1.0, 1.3, -2.6], scale: [0.4, 2.6, 0.5], color: 'indigo' },
+    { shape: 'box', pos: [0, 2.75, -2.6], scale: [2.4, 0.4, 0.5], color: 'violet' },
+    { shape: 'pyramid', pos: [0, 3.2, -2.6], rot: [0, 45, 0], scale: [0.5, 0.5, 0.5], color: 'yellow', glow: true },
+  ] },
+  crates: { parts: [
+    { shape: 'box', pos: [-0.5, 0.52, 0.2], scale: [0.7, 0.7, 0.7], color: 'wood' }, { shape: 'box', pos: [0.35, 0.47, -0.1], scale: [0.6, 0.6, 0.6], color: 'cream' },
+    { shape: 'box', pos: [-0.2, 1.1, 0.1], scale: [0.5, 0.5, 0.5], color: 'lavender' }, { shape: 'box', pos: [0.5, 0.42, 0.7], scale: [0.5, 0.5, 0.5], color: 'wood' },
+  ] },
+  vault: { parts: [
+    ...[-1.7, 0, 1.7].flatMap(x => [
+      { shape: 'box', pos: [x, 1.0, -3.2], scale: [1.5, 2.0, 0.12], color: 'indigo' },
+      ...[0.35, 0.95, 1.55].map(y => ({ shape: 'box', pos: [x, y, -3.0], scale: [1.5, 0.07, 0.45], color: 'lavender' })),
+      { shape: 'box', pos: [x - 0.75, 1.0, -3.0], scale: [0.07, 2.0, 0.45], color: 'indigo' }, { shape: 'box', pos: [x + 0.75, 1.0, -3.0], scale: [0.07, 2.0, 0.45], color: 'indigo' },
+    ]),
+  ] },
+  postbox: { parts: [
+    { shape: 'cylinder', pos: [0, 0.6, 0], scale: [0.12, 1.2, 0.12], color: 'navy' }, { shape: 'box', pos: [0, 1.35, 0], scale: [0.9, 0.55, 0.55], color: 'magenta' },
+    { shape: 'cylinder', pos: [0, 1.62, 0], rot: [90, 0, 0], scale: [0.9, 0.55, 0.3], color: 'magenta' }, { shape: 'box', pos: [0, 1.4, 0.29], scale: [0.5, 0.06, 0.02], color: 'navy' },
+  ] },
+  flag: { parts: [{ shape: 'box', pos: [0.5, 1.75, 0], scale: [0.05, 0.5, 0.05], color: 'navy' }, { shape: 'box', pos: [0.5, 1.9, 0.14], scale: [0.04, 0.2, 0.28], color: 'yellow', glow: true }] },
+  nest: { parts: [
+    { shape: 'cylinder', pos: [0, 0.12, 0], scale: [1.5, 0.24, 1.5], color: 'bark' }, { shape: 'cylinder', pos: [0, 0.22, 0], scale: [1.15, 0.14, 1.15], color: 'wood' },
+    { shape: 'sphere', pos: [0, 0.26, 0], scale: [0.95, 0.16, 0.95], color: 'lavender' }, { shape: 'box', pos: [1.5, 0.3, -0.6], scale: [0.5, 0.6, 0.4], color: 'plum' },
+    { shape: 'box', pos: [1.5, 0.63, -0.6], scale: [0.6, 0.06, 0.5], color: 'cream' },
+  ] },
+  lookout: { parts: [
+    { shape: 'cylinder', pos: [0, 0.08, 0], scale: [1.8, 0.16, 1.8], color: 'stone' },
+    ...[0, 120, 240].map(a => ({ shape: 'cylinder', pos: [Math.cos(a * Math.PI / 180) * 0.3, 0.6, Math.sin(a * Math.PI / 180) * 0.3], rot: [Math.sin(a * Math.PI / 180) * 18, 0, -Math.cos(a * Math.PI / 180) * 18], scale: [0.05, 1.0, 0.05], color: 'navy' })),
+    { shape: 'cylinder', pos: [0.12, 1.3, 0.16], rot: [50, 36, 0], scale: [0.22, 1.1, 0.22], color: 'periwinkle' }, { shape: 'cylinder', pos: [0.36, 1.66, 0.49], rot: [50, 36, 0], scale: [0.3, 0.12, 0.3], color: 'yellow' },
+  ] },
+  memorial: { parts: [0, 1, 2, 3, 4, 5, 6].map(i => ({ shape: 'box', pos: [Math.cos(i * 0.898) * 4.6, 0.45 + (i % 3) * 0.12, Math.sin(i * 0.898) * 4.6], rot: [0, -i * 51.4, 0], scale: [0.5, 0.9 + (i % 3) * 0.24, 0.3], color: i % 2 ? 'stone' : 'dark' })) },
+};
+const SEC = {};   // id -> { ...section, y, group, extra }
+let sectionsReady = false;
+function hang(obj, ent) { obj.traverse(o => { o.userData.ent = ent; }); statics.push(obj); }
+function unhang(obj) { const i = statics.indexOf(obj); if (i >= 0) statics.splice(i, 1); }
+function buildSections(list) {
+  FLATS = list.map(s => ({ ...s, y: rawHeight(s.x, s.z) }));
+  makeMoon(); scatterRocks();
+  for (const s of FLATS) {
+    const g = new THREE.Group(); g.position.set(s.x, s.y, s.z); main.group.add(g);
+    const col = C(SECTION_COLOR[s.id] || '#c9c2ff'), m = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+    DIM.push({ m, base: col });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(s.r - 0.1, s.r + 0.03, 72).rotateX(-Math.PI / 2), m); ring.position.y = 0.04; g.add(ring);
+    const lamp = build(LANTERN), a = Math.atan2(-s.z, -s.x) + 0.5; lamp.position.set(Math.cos(a) * (s.r - 0.2), 0, Math.sin(a) * (s.r - 0.2)); g.add(lamp);
+    const ent = { kind: 'section', id: s.id, name: `${SECTION_ICON[s.id] || '📍'} ${s.name}`, desc: s.theme, x: s.x, z: s.z };
+    if (PROPS[s.id]) { const p = makeThing(PROPS[s.id].parts); p.rotation.y = Math.atan2(-s.x, -s.z); g.add(p); hang(p, ent); }   // facing the middle of the Moon
+    hang(lamp, ent);
+    SEC[s.id] = { ...s, group: g, ent };
+  }
+  const H = SEC.hatch, out = s => Math.atan2(-s.x, -s.z);
+  if (H) {   // the door glows while the hatch is open; crates stand on the pad while a cargo is here
+    H.door = new THREE.MeshBasicMaterial({ color: C(PAL.mint) });
+    const d = new THREE.Mesh(UNIT_GEO.box, H.door), holder = new THREE.Group(); d.position.set(0, 1.3, -2.68); d.scale.set(1.6, 2.6, 0.08);
+    holder.rotation.y = out(H); holder.add(d); H.group.add(holder); hang(holder, H.ent);
+    H.crates = makeThing(PROPS.crates.parts); H.crates.visible = false; H.group.add(H.crates); hang(H.crates, { kind: 'crates', name: '📦 Cargo', desc: 'The last things humanity sent.' });
+  }
+  if (SEC.postbox) { const f = makeThing(PROPS.flag.parts); f.rotation.y = out(SEC.postbox); f.visible = false; SEC.postbox.group.add(f); SEC.postbox.flag = f; }
+  if (SEC.vault) { SEC.vault.items = new THREE.Group(); SEC.vault.items.rotation.y = out(SEC.vault); SEC.vault.group.add(SEC.vault.items); }
+  sectionsReady = true;
+}
+// what he keeps stands on the shelves: one small thing per kept item
+const KEPT_GEO = [new THREE.BoxGeometry(0.2, 0.26, 0.16), new THREE.SphereGeometry(0.12, 10, 8), new THREE.CylinderGeometry(0.09, 0.11, 0.26, 8), new THREE.ConeGeometry(0.12, 0.26, 6)];
+const KEPT_COL = ['pink', 'mint', 'yellow', 'periwinkle', 'cream', 'orange', 'teal', 'magenta', 'lime', 'white'];
+let keptKey = '';
+function showVault(items) {
+  const V = SEC.vault; if (!V) return;
+  const key = items.map(i => i.id).join(','); if (key === keptKey) return; keptKey = key;
+  [...V.items.children].forEach(c => { V.items.remove(c); unhang(c); });
+  items.slice().reverse().forEach((it, n) => {
+    if (n >= 54) return;
+    const unit = Math.floor(n / 18), slot = n % 18, row = Math.floor(slot / 6), colI = slot % 6;
+    const m = new THREE.Mesh(KEPT_GEO[it.id % 4], Lambert({ color: C(PAL[KEPT_COL[it.id % KEPT_COL.length]]) }));
+    m.position.set([-1.7, 0, 1.7][unit] - 0.55 + colI * 0.22, [0.52, 1.12, 1.72][row], -3.0); m.castShadow = true;
+    m.userData.ent = { kind: 'kept', name: '🗄️ ' + it.title, desc: it.note }; V.items.add(m); statics.push(m);
+  });
+}
+
+// ---------------------------------------------------------------- what he built: recipes of simple shapes from the Foundry, already checked by the server
+const matCache = {};
+function makeThing(parts) {
+  const g = new THREE.Group();
+  for (const p of parts) {
+    if (!UNIT_GEO[p.shape]) continue;
+    const k = p.color + (p.glow ? '*' : '');
+    let mat = matCache[k];
+    if (!mat) { const c = C(PAL[p.color] || PAL.violet); mat = matCache[k] = p.glow ? new THREE.MeshBasicMaterial({ color: c }) : Lambert({ color: c }); if (p.glow) { mat.userData.base = c.clone(); GLOWS.push(mat); } }
+    const m = new THREE.Mesh(UNIT_GEO[p.shape], mat);
+    m.position.fromArray(p.pos); m.rotation.set(...(p.rot || [0, 0, 0]).map(THREE.MathUtils.degToRad)); m.scale.fromArray(p.scale);
+    m.castShadow = !p.glow; m.receiveShadow = true; g.add(m);
+  }
+  return g;
+}
+const BUILT = new Map();   // id -> { group, b }
+function showBuilds(list, announce) {
+  const live = new Set(list.map(b => b.id));
+  for (const [id, x] of BUILT) if (!live.has(id)) { main.group.remove(x.group); unhang(x.group); BUILT.delete(id); }
+  for (const b of list) {
+    if (BUILT.has(b.id)) continue;
+    const g = makeThing(b.parts); g.position.set(b.x, ground(b.x, b.z), b.z); g.rotation.y = (b.rot || 0) * Math.PI / 180;
+    hang(g, { kind: 'made', name: '✨ ' + b.name, desc: b.why ? `Honk asked the Foundry for this: ${b.why}` : 'Made for Honk by the Foundry', x: b.x, z: b.z });
+    main.group.add(g); BUILT.set(b.id, { group: g, b });
+    if (announce) { g.scale.setScalar(0.01); tween(1.6, k => g.scale.setScalar(Math.max(0.01, 1 - Math.pow(1 - k, 3)))); burst(b.x, ground(b.x, b.z) + 1, b.z, '#ffd23f', 26); }
+  }
+}
+
+const PN = 260, pPos = new Float32Array(PN * 3).fill(-999), pCol = new Float32Array(PN * 3), pVel = new Float32Array(PN * 3), pLife = new Float32Array(PN);
+let pIdx = 0;
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+const pMat = new THREE.PointsMaterial({ size: 0.17, vertexColors: true }); flowerMats.push(pMat);
+{ const pts = new THREE.Points(pGeo, pMat); pts.frustumCulled = false; main.group.add(pts); }
+function burst(x, y, z, hex, n = 10, sp = 2.4, up = 3) {
+  const c = C(hex);
+  for (let k = 0; k < n; k++) {
+    const i = pIdx++ % PN, a = Math.random() * 6.283, s = Math.random() * sp;
+    pPos.set([x, y, z], i * 3); pVel.set([Math.cos(a) * s, up * (0.5 + Math.random()), Math.sin(a) * s], i * 3);
+    pCol.set([c.r, c.g, c.b], i * 3); pLife[i] = 0.6 + Math.random() * 0.6;
+  }
+  pGeo.attributes.color.needsUpdate = true;
+}
+function stepParticles(dt) {
+  for (let i = 0; i < PN; i++) {
+    if (pLife[i] <= 0) continue;
+    pLife[i] -= dt; pVel[i * 3 + 1] -= 9 * dt;
+    for (let k = 0; k < 3; k++) pPos[i * 3 + k] += pVel[i * 3 + k] * dt;
+    if (pLife[i] <= 0) pPos[i * 3 + 1] = -999;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+}
+const tweens = [];
+const tween = (dur, fn, done) => tweens.push({ t: 0, dur, fn, done });
+function stepTweens(dt) {
+  for (let i = tweens.length - 1; i >= 0; i--) { const w = tweens[i]; w.t += dt; const k = Math.min(1, w.t / w.dur); w.fn(k); if (k >= 1) { tweens.splice(i, 1); w.done?.(); } }
+}
+const _v = new THREE.Vector3();
+function toScreen(x, y, z) { _v.set(x, y, z); main.group.localToWorld(_v).project(camera); return [(_v.x + 1) / 2 * innerWidth, (1 - _v.y) / 2 * innerHeight, _v.z < 1]; }
+function floatText(x, y, z, text) {
+  const [sx, sy, ok] = toScreen(x, y, z); if (!ok) return;
+  const el = document.createElement('div'); el.className = 'float'; el.textContent = text; el.style.left = sx + 'px'; el.style.top = sy + 'px';
+  document.body.append(el); setTimeout(() => el.remove(), 1300);
+}
+
+function makeHonk() {
+  const mat = hex => Lambert({ color: hex });
+  const white = mat('#f7f4ec'), wingM = mat('#dedbe9'), orange = mat('#ff8a2a'), ink = mat('#1a1040'), blush = mat('#ffb0c8');
+  const eyeW = new THREE.MeshBasicMaterial({ color: '#ffffff' });
+  const mesh = (geo, m, x = 0, y = 0, z = 0, parent) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; parent.add(o); return o; };
+  const ball = (rx, ry, rz) => new THREE.SphereGeometry(1, 20, 14).scale(rx, ry, rz);
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  mesh(ball(0.6, 0.47, 0.5), white, 0, 0.66, 0, body);                                      // round, plump body
+  mesh(ball(0.42, 0.3, 0.42), white, 0.12, 0.55, 0, body);                                  // full belly
+  mesh(new THREE.ConeGeometry(0.17, 0.34, 10).rotateZ(1.15), white, -0.62, 0.84, 0, body);  // perky tail
+  const wings = [1, -1].map(sd => { const w = mesh(ball(0.4, 0.22, 0.09), wingM, -0.08, 0.74, sd * 0.47, body); w.rotation.z = 0.25; w.rotation.x = sd * -0.15; return w; });
+  // the long neck: a tapered tube along a gentle S-curve
+  const neck = new THREE.Group(); neck.position.set(0.36, 0.9, 0); body.add(neck);
+  const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, -0.05, 0), new THREE.Vector3(0.13, 0.3, 0), new THREE.Vector3(0.06, 0.6, 0), new THREE.Vector3(0.14, 0.86, 0)]);
+  const TS = 24, RS = 10, tube = new THREE.TubeGeometry(curve, TS, 1, RS, false), tp = tube.attributes.position, cp = new THREE.Vector3();
+  for (let i = 0; i < tp.count; i++) { const t = Math.floor(i / (RS + 1)) / TS, rad = 0.16 - 0.055 * t; curve.getPointAt(t, cp); tp.setXYZ(i, cp.x + (tp.getX(i) - cp.x) * rad, cp.y + (tp.getY(i) - cp.y) * rad, cp.z + (tp.getZ(i) - cp.z) * rad); }
+  tube.computeVertexNormals(); mesh(tube, white, 0, 0, 0, neck);
+  const head = new THREE.Group(); head.position.set(0.14, 0.88, 0); neck.add(head);
+  mesh(ball(0.21, 0.19, 0.18), white, 0, 0, 0, head);
+  mesh(ball(0.17, 0.055, 0.085), orange, 0.24, -0.03, 0, head);                              // flat orange beak
+  mesh(ball(0.035, 0.03, 0.04), orange, 0.13, 0.025, 0, head);                               // little knob where the beak starts
+  const eyes = [];
+  for (const sd of [1, -1]) {
+    eyes.push(mesh(ball(0.062, 0.07, 0.03), eyeW, 0.09, 0.06, sd * 0.155, head));           // big cartoon eyes
+    eyes.push(mesh(ball(0.032, 0.04, 0.02), ink, 0.115, 0.06, sd * 0.175, head));
+    mesh(ball(0.05, 0.025, 0.01), blush, 0.07, -0.05, sd * 0.17, head);
+  }
+  const legs = [1, -1].map(sd => {
+    const hip = new THREE.Group(); hip.position.set(0.04, 0.34, sd * 0.17); body.add(hip);
+    mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.34, 6).translate(0, -0.17, 0), orange, 0, 0, 0, hip);
+    mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.03, 3).rotateY(Math.PI / 2), orange, 0.07, -0.33, 0, hip);   // webbed foot
+    return hip;
+  });
+  root.userData.rig = { body, neck, head, legs, wings, eyes };
+  return root;
+}
+const honk = makeHonk(); honk.traverse(o => { o.userData.ent = { kind: 'honk', name: '🪿 Honk' }; }); main.group.add(honk); statics.push(honk);
+
+let honkPose = 'idle';
+const RIG = honk.userData.rig, J = { neck: 0, head: 0, headY: 0, tilt: 0, roll: 0, low: 0, legA: 0, wing: 0 };
+function poseHonk(dt, t) {
+  const T = { neck: 0, head: 0, headY: 0, tilt: 0, roll: 0, low: 0, legA: 0, wing: 0 };
+  switch (honkPose) {
+    case 'walk': T.roll = Math.sin(t * 10) * 0.09; T.legA = Math.sin(t * 10) * 0.55; T.neck = -0.12 + Math.sin(t * 20) * 0.04; T.head = 0.1; break;
+    case 'peck': T.neck = -0.95 * Math.abs(Math.sin(t * 6)) - 0.25; T.head = -0.2; T.tilt = -0.1; break;
+    case 'type': T.neck = -0.45 + Math.abs(Math.sin(t * 14)) * 0.05; T.head = -0.15 + Math.sin(t * 3) * 0.05; break;
+    case 'think': T.neck = 0.1; T.head = 0.25 + Math.sin(t * 0.9) * 0.08; T.headY = Math.sin(t * 0.6) * 0.35; T.tilt = Math.sin(t * 1.3) * 0.04; break;
+    case 'hop': T.wing = Math.abs(Math.sin(t * 8)) * 0.9; T.neck = 0.15; break;
+    case 'trip': T.tilt = -0.45; T.neck = -0.5; T.head = 0.35; T.wing = 0.9 + Math.sin(t * 30) * 0.15; T.legA = 0.4; break;   // stumbling, wings out
+    case 'rest': T.low = 0.22; T.neck = 0.35; T.head = -0.35; T.legA = 0; break;
+    case 'honk': T.neck = 0.4; T.head = 0.55 + Math.abs(Math.sin(t * 5)) * 0.25; T.wing = 0.25 + Math.abs(Math.sin(t * 5)) * 0.2; break;
+    case 'sleep': T.low = 0.3 + Math.sin(t * 1.3) * 0.012; T.neck = 1.3; T.head = 1.45; T.headY = 0.4; break;   // neck folded back, head on his back
+    default: T.headY = Math.sin(t * 0.7) * 0.6 + Math.sin(t * 1.9) * 0.15; T.head = Math.sin(t * 0.45) * 0.12; T.neck = Math.sin(t * 0.8) * 0.06;
+  }
+  const k = Math.min(1, dt * (honkPose === 'walk' ? 14 : 7));
+  for (const n in J) J[n] += (T[n] - J[n]) * k;
+  RIG.neck.rotation.z = J.neck; RIG.head.rotation.z = J.head; RIG.head.rotation.y = J.headY;
+  RIG.body.rotation.z = J.tilt; RIG.body.rotation.x = J.roll; RIG.body.position.y = -J.low;
+  RIG.legs[0].rotation.z = J.legA; RIG.legs[1].rotation.z = -J.legA;
+  RIG.legs.forEach(l => { l.visible = J.low < 0.15; });
+  RIG.wings[0].rotation.x = -0.15 - J.wing; RIG.wings[1].rotation.x = 0.15 + J.wing;
+  if ((blinkT -= dt) < 0) blinkT = 2 + Math.random() * 4;
+  const shut = honkPose === 'sleep' || blinkT < 0.12;
+  RIG.eyes.forEach(e => { e.scale.y = shut ? 0.12 : 1; });
+}
+let blinkT = 3;
+// ---------------------------------------------------------------- day / night keyframes (tod: 0 = midnight, .25 sunrise, .5 noon, .75 sunset)
+const COLOR_FIELDS = ['top', 'hor', 'void', 'cloud', 'fog', 'sun', 'hs', 'hg', 'tint'];
+const NUM_FIELDS = ['sunI', 'hI', 'stars', 'aurora', 'exp', 'rays', 'fogD'];
+const NIGHT = { top: '#01010a', hor: '#01010a', void: '#01010a', cloud: '#01010a', fog: '#01010a', sun: '#c4d2f4', sunI: 1.0, hs: '#3c4066', hg: '#0a0c1c', hI: 0.5, stars: 1, aurora: 0, exp: 1.5, rays: 0, tint: '#7f8ad0', fogD: 0 };
+const DAY = { ...NIGHT, sun: '#fff4e0', sunI: 3.3, hs: '#6a6f9c', hg: '#2a2c4a', hI: 0.5, stars: 0.8, exp: 1.0, rays: 0.9, tint: '#8a86f0' };
+const LOW = { ...NIGHT, sun: '#ffd0a0', sunI: 1.6, hs: '#5a4a8a', hg: '#1a1430', hI: 0.5, stars: 1, exp: 1.3, rays: 1.4, tint: '#a080ff' };
+// the Sun is up from 06:00 to 18:00 on his clock; the rest of the time the Earth lights the dust
+const KEYS = [
+  { t: 0.00, ...NIGHT }, { t: 0.23, ...NIGHT }, { t: 0.27, ...LOW }, { t: 0.33, ...DAY }, { t: 0.67, ...DAY }, { t: 0.73, ...LOW }, { t: 0.77, ...NIGHT }, { t: 1.00, ...NIGHT },
+].map(k => ({ ...k, ...Object.fromEntries(COLOR_FIELDS.map(f => [f, C(k[f])])) }));
+const cur = {}; COLOR_FIELDS.forEach(f => cur[f] = new THREE.Color());
+function sampleKeys(tod) {
+  let i = 0; while (i < KEYS.length - 2 && KEYS[i + 1].t <= tod) i++;
+  const a = KEYS[i], b = KEYS[i + 1], f = smooth(0, 1, (tod - a.t) / (b.t - a.t));
+  COLOR_FIELDS.forEach(k => cur[k].lerpColors(a[k], b[k], f));
+  NUM_FIELDS.forEach(k => cur[k] = lerp(a[k], b[k], f));
+}
+
+// ---------------------------------------------------------------- post: full-resolution target, god rays, glow, tonemap, grade, outlines, sky dither
+// No pixelation: the scene renders at full resolution. The light on surfaces is already dithered in their materials;
+// here the sky and clouds get the same Bayer pattern so the whole picture reads as one dithered image.
+let rt, ditherSize = 4;
+const post = new THREE.ShaderMaterial({
+  depthTest: false, depthWrite: false,
+  uniforms: {
+    tColor: { value: null }, tDepth: { value: null }, res: { value: new THREE.Vector2() }, dpr: { value: 1 }, uDither: U.uDither,
+    sunUV: { value: new THREE.Vector2() }, sunVis: { value: 0 }, rays: { value: 1 }, rayColor: { value: new THREE.Color() },
+    bloom: { value: 1 }, exposure: { value: 1 }, sat: { value: 1.4 }, tint: { value: new THREE.Vector3(1, 1, 1) },
+    vignette: { value: 0.35 }, outline: { value: 1 }, near: { value: 0.1 }, far: { value: 1000 },
+  },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
+  fragmentShader: `
+    uniform sampler2D tColor, tDepth; uniform vec2 res, sunUV;
+    uniform float sunVis, rays, bloom, exposure, sat, vignette, outline, near, far, dpr;
+    uniform vec3 rayColor, tint;
+    varying vec2 vUv;
+    ${DITHER_GLSL}
+    float luma(vec3 c){ return dot(c, vec3(.2126, .7152, .0722)); }
+    vec3 aces(vec3 x){ return clamp((x * (2.51 * x + .03)) / (x * (2.43 * x + .59) + .14), 0., 1.); }
+    float viewZ(float d){ return d > .99999 ? far : 2. * near * far / (far + near - (d * 2. - 1.) * (far - near)); }
+    float zAt(vec2 uv){ return viewZ(texture2D(tDepth, uv).x); }
+    void main(){
+      vec2 uv = vUv, tx = 1. / res;
+      vec3 c = texture2D(tColor, uv).rgb;
+      float z = zAt(uv);
+      if (sunVis > .001 && rays > .001) {
+        vec2 delta = (uv - sunUV) * (.85 / 40.);
+        vec2 co = uv; float decay = 1.; vec3 acc = vec3(0.);
+        for (int i = 0; i < 40; i++) {
+          co -= delta;
+          float skyPx = step(.99999, texture2D(tDepth, co).x);
+          vec3 s = texture2D(tColor, co).rgb; float L = luma(s);
+          acc += s / (1. + L) * min(max(L - .8, 0.), 3.) * skyPx * decay;
+          decay *= .965;
+        }
+        c += acc * (rays * sunVis / 40.) * rayColor * 1.6;
+      }
+      vec3 g = vec3(0.);
+      for (int i = 0; i < 8; i++) {
+        vec2 o = vec2(cos(float(i) * .7854), sin(float(i) * .7854)) * tx * dpr;
+        g += max(texture2D(tColor, uv + o * 4.).rgb - 1., 0.) * .6 + max(texture2D(tColor, uv + o * 10.).rgb - 1., 0.) * .4;
+      }
+      c += g * (bloom / 8.);
+      c = aces(c * exposure);
+      c = pow(c, vec3(1. / 2.2));
+      float l = luma(c);
+      c = mix(vec3(l), c, sat);
+      c = mix(c * tint, c, smoothstep(0., .55, l) * .6 + .4);
+      c *= 1. - vignette * pow(length(vUv - .5) * 1.35, 2.5);
+
+      // ink outline on silhouettes: this pixel is in front of a neighbour that is much farther away.
+      // Strong up close, gone in the distance so far islands and the horizon stay soft.
+      if (outline > .001 && z < 120.) {
+        vec2 e = tx * max(1., uDither.x * .75);
+        float gap = max(max(zAt(uv + vec2(e.x, 0.)), zAt(uv - vec2(e.x, 0.))), max(zAt(uv + vec2(0., e.y)), zAt(uv - vec2(0., e.y)))) - z;
+        float ink = smoothstep(.12, .35, gap / z) * (1. - smoothstep(25., 110., z)) * outline;
+        c = mix(c, c * c * .45, ink);
+      }
+
+      // the sky, clouds and cloud sea have no lit surface, so they are dithered here, in a few soft steps of brightness
+      if (z >= far * .999 && uDither.w > .01) {
+        float Y = max(luma(c), 1e-4), L = uDither.y * 1.3;
+        float b = (bayer8(gl_FragCoord.xy / uDither.x) - .5) * uDither.w;
+        c *= max(floor(Y * L + .5 + b) / L, Y * .5) / Y;
+      }
+      gl_FragColor = vec4(clamp(c, 0., 1.), 1.);
+    }`,
+});
+const postScene = new THREE.Scene(); postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post));
+const postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+function makeTarget() {
+  rt?.dispose(); rt?.depthTexture?.dispose();
+  const dpr = renderer.getPixelRatio(), w = Math.max(1, Math.round(innerWidth * dpr)), h = Math.max(1, Math.round(innerHeight * dpr));
+  rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+  rt.depthTexture = new THREE.DepthTexture(w, h);
+  post.uniforms.tColor.value = rt.texture; post.uniforms.tDepth.value = rt.depthTexture; post.uniforms.res.value.set(w, h); post.uniforms.dpr.value = dpr;
+  post.uniforms.near.value = camera.near; post.uniforms.far.value = camera.far;
+  U.uDither.value.x = ditherSize * dpr;
+  fireflyMat.uniforms.uSize.value = 1.2 * dpr;
+}
+makeTarget();
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); makeTarget(); });
+
+const short = (s, n = 48) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// --- alerts at the top of the screen: his thoughts, his answers, and things that happen. Click one to dismiss it.
+const ALERT_KINDS = { thought: ['💭', 'Honk thinks'], talk: ['🪿', 'Honk says'], you: ['✨', 'You asked'], goal: ['🎯', 'New goal'], event: ['🌱', ''] };
+function addAlert({ kind = 'event', icon, text = '', title, wait = false, ms, asked }) {
+  const box = $('alerts'), el = document.createElement('div'), [ic, ti] = ALERT_KINDS[kind];
+  el.className = `alert card ${kind}`;
+  el.innerHTML = `<div class="aic"></div><div>${asked ? '<q class="asked"></q>' : ''}<small></small><p></p></div><i class="life"></i>`;
+  el.querySelector('.aic').textContent = icon || ic;
+  if (asked) el.querySelector('.asked').textContent = 'You: ' + asked;
+  const sm = el.querySelector('small'), p = el.querySelector('p'); sm.textContent = title ?? ti; sm.hidden = !sm.textContent;
+  const dismiss = () => { if (el.classList.contains('out')) return; el.classList.add('out'); setTimeout(() => el.remove(), 460); };
+  const live = t => { clearTimeout(el._t); const l = el.querySelector('.life'); l.style.animation = 'none'; l.offsetWidth; l.style.animation = ''; l.style.animationDuration = t + 'ms'; el._t = setTimeout(dismiss, t); };
+  const life = txt => ms || Math.max(kind === 'talk' ? 12000 : 0, Math.min(16000, 4500 + txt.length * 55));   // answers to you stay a bit longer
+  if (wait) { p.innerHTML = '<span class="dots"><i></i><i></i><i></i></span>'; el.querySelector('.life').hidden = true; }
+  else { p.textContent = text; live(life(text)); }
+  el.onclick = dismiss;
+  box.prepend(el);
+  // at most three at once; his answers to you and new goals stay, older thoughts and events make room first
+  const all = [...box.querySelectorAll('.alert:not(.out)')], extra = all.length - 3;
+  if (extra > 0) [...all.filter(x => !/\b(talk|goal)\b/.test(x.className)).reverse(), ...all.slice().reverse()].filter((x, i, a) => a.indexOf(x) === i && x !== el).slice(0, extra).forEach(x => x.onclick());
+  return { done: txt => { p.textContent = txt; el.querySelector('.life').hidden = false; live(life(txt)); el.querySelector('.aic').style.animation = 'boing .6s var(--spring)'; }, dismiss };
+}
+const toast = (icon, text) => addAlert({ kind: 'event', icon, text: short(text, 170) });
+
+// ================================================================ HONK ON THE MOON: he is a puppet here. His life runs on the server
+// (src/honk/loop.py); this page only shows where he is, what he is doing and what he has made.
+const pn = { asleep: false, tx: 2, tz: -4, where: '', arrived: true };
+const POSE_OF = { '📦': 'peck', '🗄️': 'peck', '✉️': 'peck', '❓': 'peck', '📝': 'type', '📐': 'type', '💭': 'think', '🤔': 'think', '🔭': 'think', '🌅': 'hop', '✨': 'honk', '😴': 'sleep', '🥱': 'rest' };
+const hashStr = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.codePointAt(0)) >>> 0; return h; };
+function aimHonk(doing) {
+  const s = SEC[doing.where]; if (!s) return;
+  const key = doing.where + '|' + doing.text; if (key === pn.where) return; pn.where = key;
+  let x = s.x, z = s.z;
+  if (doing.where === 'hatch') { x = s.x - s.x * 0.02; z = s.z - Math.sign(s.z || 1) * 1.2; }
+  else if (doing.icon === '😴' || doing.where === 'nest' && doing.icon !== '📝') { x = s.x; z = s.z; }
+  else { const a = hashStr(doing.text) % 628 / 100, d = s.r * (doing.where === 'vault' ? 0.25 : 0.45); x = s.x + Math.cos(a) * d; z = s.z + Math.sin(a) * d; }
+  const made = doing.icon === '✨' && [...BUILT.values()].pop();   // admiring what was just placed
+  if (made) { const b = made.b, dd = Math.hypot(b.x - s.x, b.z - s.z) || 1; x = b.x + (s.x - b.x) / dd * 2.4; z = b.z + (s.z - b.z) / dd * 2.4; pn.face = [b.x, b.z]; } else pn.face = null;
+  pn.tx = x; pn.tz = z; pn.arrived = false;
+}
+function stepHonk(dt) {
+  const p = honk.position, dx = pn.tx - p.x, dz = pn.tz - p.z, d = Math.hypot(dx, dz), doing = S?.honk.doing;
+  if (d > 0.15) {
+    const v = Math.min(d, 2.6 * dt); p.x += dx / d * v; p.z += dz / d * v;
+    let yaw = Math.atan2(-dz, dx) - honk.rotation.y; yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw)); honk.rotation.y += yaw * Math.min(1, dt * 8);
+    honkPose = 'walk';
+  } else {
+    if (!pn.arrived) { pn.arrived = true; burst(p.x, p.y + 0.2, p.z, '#c2c4e4', 5, 1, 1); }
+    honkPose = pn.asleep ? 'sleep' : POSE_OF[doing?.icon] || 'idle';
+    const f = pn.face || (doing?.where && SEC[doing.where] && honkPose !== 'idle' && honkPose !== 'sleep' ? [SEC[doing.where].x * 1.02, SEC[doing.where].z * 1.02] : null);
+    if (f && Math.hypot(f[0] - p.x, f[1] - p.z) > 0.3) { let yaw = Math.atan2(-(f[1] - p.z), f[0] - p.x) - honk.rotation.y; yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw)); honk.rotation.y += yaw * Math.min(1, dt * 4); }
+  }
+  p.y = ground(p.x, p.z) + (pn.asleep && pn.arrived ? 0.3 : 0);
+}
+
+// ================================================================ THE SERVER: one picture of Honk every two seconds (src/honk/server.py)
+let S = null, lastEvent = 0, buildsRev = -1, firstBuilds = true, online = false, openTab = null, follow = false;
+const DIARY = [];   // what happened, newest last (the server sends the latest 80 on the first poll, then only what is new)
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { cache: 'no-store' });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+const ALERT_FOR = { thought: 'thought', answer: 'talk', reply: 'talk', note: 'talk', journal: 'talk', ask: 'goal' };
+const ALERT_TITLE = { thought: 'Honk wonders', answer: 'Honk works it out', reply: 'Honk answers', note: 'Honk writes a note', journal: 'From his journal', ask: 'Honk asks you',
+  cargo: 'Cargo', vault: 'The vault', build: 'The Foundry', postcard: 'A postcard', sleep: '', system: '' };
+async function poll() {
+  try {
+    const s = await api(`/api/state?since=${lastEvent}${openTab === 'mind' ? '&params=1' : ''}`);
+    const first = !S; S = s; online = true;
+    if (!sectionsReady) { buildSections(s.sections); const n = SEC[s.honk.doing.where] || SEC.nest; honk.position.set(n.x, ground(n.x, n.z), n.z); }
+    if (s.events.length) {
+      lastEvent = s.events[s.events.length - 1].id; DIARY.push(...s.events); if (DIARY.length > 500) DIARY.splice(0, DIARY.length - 500);
+      if (!first) s.events.slice(-3).forEach(e => addAlert({ kind: ALERT_FOR[e.kind] || 'event', icon: e.icon, title: ALERT_TITLE[e.kind] ?? '', text: short(e.text, 260) }));
+    }
+    if (s.builds_rev !== buildsRev) { buildsRev = s.builds_rev; showBuilds((await api('/api/builds')).builds, !firstBuilds); firstBuilds = false; }
+    pn.asleep = s.honk.asleep; aimHonk(s.honk.doing); showVault(s.vault.items);
+    if (SEC.hatch) SEC.hatch.crates.visible = ['arrived', 'open', 'closing'].includes(s.cargo.state);
+    if (SEC.postbox?.flag) SEC.postbox.flag.visible = s.postcards.some(p => p.status !== 'replied');
+    updateHud(); if (openTab && openTab !== 'view') renderTab(openTab);
+  } catch (err) {
+    if (online || !S) { online = false; $('mindPill').textContent = '🔌 no server'; $('mindPill').title = 'Start it with: python3 src/honk/server.py'; }
+  }
+  setTimeout(poll, document.hidden ? 6000 : 2000);
+}
+
+// ================================================================ VIEWER UI: you watch, and you can send postcards. Only the Mind panel changes how Honk runs.
+const FEELS = [['energy', 'Energy', '#ff8a3d'], ['curiosity', 'Curiosity', '#e0369e'], ['connection', 'Connection', '#3fbf7f'], ['purpose', 'Purpose', '#4b8bff'], ['mood', 'Mood', '#ffd23f']];
+const FEEL_SHORT = { energy: 'Energy', curiosity: 'Curious', connection: 'Company', purpose: 'Purpose', mood: 'Mood' };
+const feelPct = (k, v) => Math.round(100 * (k === 'mood' || k === 'arousal' ? (v + 1) / 2 : k === 'weight' ? v * 2 : v));
+$('drives').innerHTML = FEELS.map(([k, n, c]) => `<div class="drive" id="dv-${k}">${FEEL_SHORT[k]}<div class="bar"><i id="d-${k}" style="background:${c}"></i></div></div>`).join('');
+// Icons are drawn as SVG so the buttons look the same everywhere, with or without an emoji font.
+const SVG = d => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  work: SVG('<rect x="3" y="8" width="18" height="12" rx="2.5"/><path d="M9 8V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V8M3 13.5h18"/><path d="M10 12.5v2.5h4v-2.5" fill="#fff"/>'),
+  journal: SVG('<path d="M6 3.5h11.5a1.5 1.5 0 0 1 1.5 1.5v15.5H7a2.5 2.5 0 0 1-2.5-2.5V5A1.5 1.5 0 0 1 6 3.5z" fill="#fff"/><path d="M4.5 18A2.5 2.5 0 0 1 7 15.5h12M9 8h6M9 11h4"/>'),
+  ideas: SVG('<path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z" fill="#fff"/><path d="M9.5 19h5M10.5 21.5h3M12 7v3M10.5 9.5h3"/>'),
+  hobbies: SVG('<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2 0-.9-.8-1.4-.8-2.3 0-1 .9-1.7 2-1.7h2.3A3.5 3.5 0 0 0 21 11.5C21 6.8 17 3 12 3z" fill="#fff"/><circle cx="7.5" cy="12" r="1.4" fill="currentColor"/><circle cx="9.5" cy="7.5" r="1.4" fill="currentColor"/><circle cx="14.5" cy="7" r="1.4" fill="currentColor"/>'),
+  mind: SVG('<circle cx="12" cy="12" r="8.5" fill="#fff"/><circle cx="9" cy="10.5" r="1.3" fill="currentColor"/><circle cx="15" cy="10.5" r="1.3" fill="currentColor"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/>'),
+  thoughts: SVG('<path d="M7.5 16.5a4 4 0 0 1-.6-8 5.5 5.5 0 0 1 10.6 0 4 4 0 0 1-.5 8z" fill="#fff"/><circle cx="7" cy="19.5" r="1.4"/><circle cx="4.5" cy="22" r=".8"/>'),
+  eye: SVG('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3" fill="currentColor"/>'),
+  walk: SVG('<ellipse cx="8" cy="8" rx="2.6" ry="4" fill="currentColor"/><ellipse cx="16" cy="13" rx="2.6" ry="4" fill="currentColor"/><path d="M6.5 15.5h3M14.5 20.5h3"/>'),
+  fly: SVG('<circle cx="12" cy="12" r="4.2" fill="currentColor"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>'),
+  follow: SVG('<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.8" fill="currentColor"/><path d="M12 1.5v3.5M12 19v3.5M1.5 12H5M19 12h3.5"/>'),
+  send: SVG('<path d="M3.5 11 20.5 3.5 13 20.5l-2.3-7.2z" fill="currentColor"/><path d="M10.7 13.3 20.5 3.5"/>'),
+  goal: SVG('<path d="M5.5 21V3.5"/><path d="M5.5 4h12l-2.5 4 2.5 4h-12" fill="#fff"/>'),
+  close: SVG('<path d="M6 6l12 12M18 6 6 18"/>'),
+  feed: SVG('<rect x="5" y="2.5" width="14" height="19" rx="3" fill="#fff"/><path d="M8.5 7.5h7M8.5 11h7M8.5 14.5h4"/><circle cx="12" cy="18.5" r=".6" fill="currentColor"/>'),
+  chat: SVG('<path d="M4 5.5h16v10.5H10l-5 4.5v-4.5H4z"/><path d="M8 10.5h.01M12 10.5h.01M16 10.5h.01" stroke-width="3"/>'),
+};
+Object.assign(ICON, {
+  vault: SVG('<rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="#fff"/><path d="M3.5 9.5h17M3.5 15h17M8 6v1.5M13 11.5V13M16.5 17v1.5"/>'),
+  card: SVG('<rect x="2.5" y="5.5" width="19" height="13" rx="2" fill="#fff"/><path d="M12 8.5v7M5.5 10h3.5M5.5 13h3.5"/><rect x="15" y="8.5" width="3.5" height="4" fill="currentColor"/>'),
+});
+document.querySelectorAll('[data-icon]').forEach(el => el.insertAdjacentHTML('afterbegin', ICON[el.dataset.icon]));
+// Fill a panel without rebuilding it: rows whose markup did not change stay as the very same DOM nodes (no flicker, no replayed
+// animation, scroll position kept); only new or changed rows are created, and rows added to a panel that is already showing slide in.
+function setTab(el, html) {
+  const tpl = document.createElement('template'); tpl.innerHTML = html;
+  const next = [...tpl.content.children], live = !!el._ready;
+  const pool = new Map(); for (const n of el.children) { if (!live) n.classList.remove('fresh'); const k = n.id ? '#' + n.id : n._k; if (!pool.has(k)) pool.set(k, []); pool.get(k).push(n); }
+  const keep = [];
+  for (const n of next) {
+    const k = n.id ? '#' + n.id : n.outerHTML, hit = pool.get(k)?.shift();
+    if (hit) { keep.push(hit); continue; }
+    n._k = k; if (live) { n.classList.add('fresh'); n.addEventListener('animationend', () => n.classList.remove('fresh'), { once: true }); }
+    keep.push(n);
+  }
+  for (const list of pool.values()) for (const n of list) n.remove();
+  let at = el.firstElementChild;
+  for (const n of keep) { if (n === at) at = at.nextElementSibling; else el.insertBefore(n, at); }
+  while (el.lastElementChild !== keep[keep.length - 1] && el.lastElementChild) el.lastElementChild.remove();
+}
+const view = tab => ({ set innerHTML(h) { setTab(tab, h); } });   // so the render code below can keep saying el.innerHTML = …
+
+let swapTimer = 0;
+const tabEl = n => $('tab-' + n);
+function showTab(name) {
+  const prev = openTab, D = $('drawer');
+  openTab = prev === name ? null : name;
+  document.body.classList.toggle('panel-open', !!openTab);
+  document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === openTab));
+  clearTimeout(swapTimer);
+  const fresh = () => document.querySelectorAll('.tab').forEach(t => t.classList.remove('leaving', 'entering'));
+  const setTitle = () => { $('dTitle').innerHTML = ICON[TABS[openTab][0]] + esc(TABS[openTab][1]); };
+  const fill = () => { const el = tabEl(openTab); el._ready = false; renderTab(openTab); el._ready = true; markSeen(openTab); };
+  const only = n => document.querySelectorAll('.tab').forEach(t => { t.hidden = t.id !== 'tab-' + n; });
+  D.style.height = ''; D.classList.remove('swapping'); fresh();
+  if (!openTab) { D.hidden = true; only(null); return; }
+  const side = openTab === 'view' ? 'right' : 'left';   // Honk's panels open from the bottom left, your View settings from the top right
+  if (!(prev && !D.hidden && D.classList.contains(side))) {   // opening from closed: the whole panel pops in
+    only(openTab); D.hidden = false; D.className = 'card ' + side; D.offsetWidth; D.classList.add('show'); setTitle(); fill(); return;
+  }
+  // already open: keep the panel, sink the old content, resize the frame, drop the new content in from above
+  const old = [...document.querySelectorAll('.tab')].find(t => !t.hidden), from = D.offsetHeight;
+  D.classList.remove('show'); D.style.height = from + 'px'; D.offsetWidth; D.classList.add('swapping');
+  old?.classList.add('leaving');
+  swapTimer = setTimeout(() => {
+    old?.classList.remove('leaving'); only(openTab); setTitle(); fill();
+    const el = tabEl(openTab); el.classList.add('entering');
+    D.style.transition = 'none'; D.style.height = 'auto'; const to = D.offsetHeight; D.style.height = from + 'px'; D.offsetWidth; D.style.transition = '';
+    D.style.height = to + 'px';
+    swapTimer = setTimeout(() => { D.style.height = ''; D.classList.remove('swapping'); el.classList.remove('entering'); }, 440);
+  }, 190);
+}
+document.querySelectorAll('[data-tab]').forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
+$('dClose').onclick = () => showTab(openTab);
+
+const sync = () => {
+  $('vPix').textContent = ditherSize + ' px'; $('vLev').textContent = $('lev').value; $('vNear').textContent = $('near').value;
+  for (const [v, i] of [['vDit', 'dit'], ['vOut', 'out'], ['vRay', 'ray'], ['vBlo', 'blo'], ['vSat', 'sat']]) $(v).textContent = (+$(i).value).toFixed(2);
+};
+$('pix').oninput = e => { ditherSize = +e.target.value; U.uDither.value.x = ditherSize * renderer.getPixelRatio(); sync(); };
+for (const [id, k] of [['lev', 'y'], ['near', 'z'], ['dit', 'w']]) $(id).oninput = e => { U.uDither.value[k] = +e.target.value; sync(); };
+$('out').oninput = e => { post.uniforms.outline.value = +e.target.value; sync(); };
+$('ray').oninput = sync; $('blo').oninput = e => { post.uniforms.bloom.value = +e.target.value; sync(); };
+$('sat').oninput = e => { post.uniforms.sat.value = +e.target.value; sync(); };
+sync();
+
+const TABS = { questions: ['ideas', "Honk's questions"], cargo: ['work', 'Cargo and the Hatch'], vault: ['vault', 'The Vault'], made: ['hobbies', 'Made on the Moon'], journal: ['journal', 'Journal'],
+  postcards: ['card', 'Postcards'], mind: ['mind', 'Mind'], thoughts: ['thoughts', "Honk's diary"], view: ['eye', 'View'] };
+const clockOf = min => { const m = Math.floor(min % 1440); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+const when = ts => { ts += S?.clock.start || 0; return `Day ${Math.floor(ts / 1440) + 1} · ${clockOf(ts)}`; };   // ts: minutes since he first woke
+const pct = x => Math.round(x * 100) + '%';
+const meter = (icon, label, used, of, color = 'var(--accent)') => `<div class="meter"><b>${icon}</b><div>${esc(label)}<div class="bar"><i style="width:${Math.min(100, of ? used / of * 100 : 0)}%;background:${color}"></i></div></div><small>${used} / ${of}</small></div>`;
+const HATCH_WORD = { closed: ['🔒', 'The hatch is closed'], arrived: ['📦', 'A cargo has landed; he is unpacking it'], open: ['🚪', 'The hatch is open'], closing: ['⏳', 'The hatch is closing'] };
+const ORIGIN = q => q.origin.startsWith('visitor:') ? ['✉️', 'a visitor asked'] : q.origin.startsWith('feeling:') ? ['🫧', 'from a feeling'] : q.needs_web ? ['🌐', 'needs a cargo'] : ['💭', 'his own'];
+const DID = { note: 'wrote a note', build_request: 'asked the Foundry to build something', ask_visitor: 'asked the visitors', nothing: 'let it rest', reply: 'answered the visitor', skipped: '' };
+
+function renderTab(name) {
+  const el = view(tabEl(name)), s = S; if (!s || name === 'view') return;
+  if (name === 'questions') {
+    const c = s.questions.counts;
+    el.innerHTML = `<div class="note">Questions are what drives him. He asks them himself, out of what he feels, what the cargos bring and what visitors write. Some he can answer by thinking; the ones marked 🌐 have to wait until the hatch is open.</div>
+      <div class="tags">${['open', 'answered', 'built', 'parked'].map(k => `<span class="tag">${k} ${c[k] || 0}</span>`).join('')}</div>
+      <h3>On his mind (${s.questions.open.length})</h3>` +
+      (s.questions.open.map(q => { const [ic, src] = ORIGIN(q); return `<div class="love"><b>${ic}</b><span>${esc(q.text)}<small>${esc(q.why || src)} · interest ${pct(q.interest)}${q.tries ? ` · tried ${q.tries}×` : ''}</small></span></div>`; }).join('') || '<div class="note">Nothing right now. He will wonder again soon.</div>') +
+      `<h3>Worked out lately</h3>` +
+      (s.questions.recent.filter(q => q.answer).map(q => `<div class="entry"><b>${q.status === 'built' ? '🏗️' : q.origin.startsWith('visitor:') ? '✉️' : '💡'} ${esc(q.text)}</b>${esc(q.answer)}<small style="display:block;opacity:.65;margin-top:4px">sure: ${pct(q.confidence)}${DID[q.resolved] ? ' · then he ' + DID[q.resolved] : ''}</small></div>`).join('') || '<div class="note">No answers yet.</div>') +
+      (s.questions.recent.some(q => q.status === 'parked') ? `<h3>Set aside</h3>` + s.questions.recent.filter(q => q.status === 'parked').slice(0, 8).map(q => `<div class="row"><b>🗃️</b><span>${esc(q.text)}</span></div>`).join('') : '');
+  } else if (name === 'cargo') {
+    const c = s.cargo, [ic, word] = HATCH_WORD[c.state], B = c.budget;
+    const slot = { request: '✉️', matched: '🎯', serendipity: '🎲' }, st = i => i.status === 'packed' ? '📦 not unpacked yet' : i.status === 'request' ? 'a visitor\'s question, to look up' : i.status === 'judged' ? (i.kept ? '🗄️ kept' : 'read and let pass') : i.status;
+    el.innerHTML = `<div class="note">${c.story_over ? 'The counted cargos are over. Unexplained signals still arrive.' : 'These are the last cargos from humanity. The internet exists for Honk only while the hatch is open, through one door, with a budget.'}</div>
+      ${meter('📦', 'Cargos left', c.ledger, c.ledger_size, 'var(--sun)')}
+      <div class="love"><b>${ic}</b><span>${word}${c.state !== 'closed' ? ` · ${Math.ceil(c.minutes_left)} min left` : ''}<small>Cargo ${c.window || '–'}${c.refused ? ` · ${c.refused} calls refused while closed` : ''}</small></span></div>
+      <h3>This window's budget</h3>${meter('🔎', 'Searches', B.searches.used, B.searches.of)}${meter('📖', 'Pages', B.fetches.used, B.fetches.of)}${meter('🧮', 'Kilobytes', Math.round(B.bytes.used / 1000), Math.round(B.bytes.of / 1000))}
+      <h3>In cargo ${c.window || ''}</h3>` +
+      (c.items.map(i => `<div class="row"><b>${slot[i.slot_type] || '📄'}</b><span>${esc(i.title || '(untitled)')}<small>${esc(i.source)} · ${st(i)}${i.reason ? ' · ' + esc(i.reason) : ''}</small></span></div>`).join('') || '<div class="note">Nothing has landed yet.</div>') +
+      `<h3>Earlier windows</h3>` + (c.windows.filter(w => w.summary).map(w => `<div class="note">${esc(w.summary)}</div>`).join('') || '<div class="note">None yet.</div>');
+  } else if (name === 'vault') {
+    const v = s.vault;
+    el.innerHTML = `<div class="note">What Honk keeps of humanity. The vault is small on purpose: when it is full he has to let something go to keep something new, and say why. He stores his own note, a short quote and the source, never the page.</div>
+      ${meter('🗄️', 'Shelf space', v.used, v.size, 'var(--peach)')}` +
+      (v.items.map(i => `<div class="entry"><b>${esc(i.title)}</b>${esc(i.note)}${i.quote ? `<small style="display:block;font-style:italic;opacity:.75;margin-top:4px">“${esc(i.quote)}”</small>` : ''}
+        <div class="tags" style="margin-top:6px">${i.tags.split(',').filter(Boolean).map(t => `<span class="tag">${esc(t)}</span>`).join('')}${/^https?:/.test(i.url) ? `<a class="tag" href="${esc(i.url)}" target="_blank" rel="noopener noreferrer">source</a>` : ''}</div></div>`).join('') || '<div class="note">The shelves are empty.</div>') +
+      (v.released.length ? '<h3>Let go</h3>' + v.released.map(r => `<div class="love bad"><b>🕊️</b><span>${esc(r.title)}<small>${esc(r.released_reason)}</small></span></div>`).join('') : '');
+  } else if (name === 'made') {
+    const icon = { placed: '✨', dropped: '💥', queued: '⏳', building: '🔨' };
+    el.innerHTML = `<div class="note">Honk never builds by himself. When an answer still matters to him he may ask the Foundry for one thing; code checks the request, the Foundry makes it, and two checks decide whether it is placed.${s.mind.building ? ' <b>The Foundry is working right now.</b>' : ''}</div>` +
+      s.sections.filter(x => x.builds).map(x => meter(SECTION_ICON[x.id] || '📍', x.name, x.count, x.capacity, SECTION_COLOR[x.id])).join('') + '<h3>Requests</h3>' +
+      (s.builds.map(b => `<div class="love${b.status === 'dropped' ? ' bad' : ''}"><b>${icon[b.status] || '•'}</b><span>${esc(b.name || b.thing)}<small>${esc(SEC[b.section_id]?.name || b.section_id)} · ${when(b.ts)}</small>
+        <small>${esc(b.status === 'dropped' ? 'Dropped: ' + b.drop_reason : b.why || b.brief || '')}</small></span></div>`).join('') || '<div class="note">He has not asked for anything yet.</div>');
+  } else if (name === 'journal') {
+    el.innerHTML = s.journal.map(j => `<div class="entry"><b>${j.kind === 'note' ? '📝 A note' : '📔 Journal'} · ${when(j.ts)}</b>${esc(j.text)}</div>`).join('') || '<div class="note">He writes in his journal before he sleeps, and notes when something is worth writing down. Nothing yet.</div>';
+  } else if (name === 'postcards') {
+    const who = localStorage.getItem('honk.name') || '';
+    el.innerHTML = `<div class="note">To Honk you are one of the ones who come after. Write him a postcard in the field at the bottom of the screen. If he does not know the answer, it rides in the next cargo and he looks it up when the hatch opens. Honk is a fictional AI character: his replies are generated. Do not send private information.</div>
+      <label id="nameRow">Your name on the card<input id="cardName" maxlength="24" placeholder="a visitor" value="${esc(who)}" style="border:2px solid var(--ink);border-radius:10px;padding:6px 10px;background:#fff"></label>` +
+      (s.asks.length ? '<h3>Honk asks you</h3>' + s.asks.slice().reverse().map(a => `<div class="love"><b>❓</b><span>${esc(a.text)}<small>${when(a.ts)}</small></span><button class="chip" data-answer="${a.id}">answer</button></div>`).join('') : '') +
+      '<h3>Postcards</h3>' + (s.postcards.map(p => `<div class="post"><div class="av" style="background:hsl(${hashStr(p.name) % 360} 60% 45%)">${esc(p.name[0].toUpperCase())}</div><div><header><b>${esc(p.name)}</b> <small>${esc(p.status)} · ${when(p.ts)}</small></header>
+        <p>${esc(p.text)}</p>${p.reply ? `<p class="rep me">🪿 ${esc(p.reply)}</p>` : ''}</div></div>`).join('') || '<div class="note">No postcards yet.</div>');
+  } else if (name === 'mind') {
+    const m = s.mind, f = s.honk.feel, P = s.params || {}, groups = {};
+    for (const [k, v] of Object.entries(P)) (groups[k.split('.')[0]] ||= []).push([k, v]);
+    const trace = s.trace || [], line = k => trace.length > 1 ? trace.map((t, i) => `${(i / (trace.length - 1) * 100).toFixed(1)},${(28 - ((k === 'valence' ? (t[k] + 1) / 2 : t[k]) * 26)).toFixed(1)}`).join(' ') : '';
+    el.innerHTML = `<div class="note">This panel is the only place that changes how Honk runs. Every change is logged. The numbers live in config/honk.toml.</div>
+      <div class="love${m.status?.ready ? '' : ' bad'}"><b>🧠</b><span>${esc(m.model)}<small>${m.status?.ready ? 'ready' : esc(m.status?.note || 'not ready')}${m.test ? ' · test mode (scripted mind, recorded pages)' : ''} · Foundry: ${esc(m.foundry)} · gateway: ${esc(m.gateway)}</small>
+        <small>${m.calls} calls, ${m.failed} skipped (${m.calls ? (m.failed / m.calls * 100).toFixed(1) : 0}%)${m.last_error ? ' · last: ' + esc(short(m.last_error, 90)) : ''}</small></span></div>
+      <div class="tags"><button class="chip${m.paused ? ' on' : ''}" id="pauseBtn">${m.paused ? '▶️ Let him go on' : '⏸️ Pause him (kill switch)'}</button></div>
+      <label>Clock speed <span class="v">${m.speed}× (simulated minutes per real minute)</span><input id="speed" type="range" min="0.5" max="60" step="0.5" value="${m.speed}"></label>
+      <h3>Presets</h3><div class="tags">${['', ...m.presets].map(p => `<button class="chip${(m.preset || '') === p ? ' on' : ''}" data-preset="${esc(p)}">${p || 'plain'}</button>`).join('')}</div>
+      <h3>Feelings · ${esc(s.honk.emotion)}</h3>` +
+      [['energy', '⚡', 'Energy'], ['curiosity', '❔', 'Curiosity pressure'], ['connection', '🤝', 'Connection'], ['purpose', '🧭', 'Purpose'], ['mood', '🙂', 'Mood'], ['arousal', '✨', 'Arousal'], ['weight', '🪨', 'Weight']]
+        .map(([k, ic, n]) => `<div class="meter"><b>${ic}</b><div>${n}${s.honk.urgent.includes(k) ? ' · urgent' : ''}<div class="bar"><i style="width:${feelPct(k, f[k])}%;background:var(--accent)"></i></div></div><small>${f[k].toFixed(2)}</small></div>`).join('') +
+      (trace.length > 1 ? `<h3>Trace (last ${trace.length} events)</h3><svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%;height:70px;border:2px solid var(--ink);border-radius:10px;background:#fff">
+        <polyline points="${line('valence')}" fill="none" stroke="#ffb000" stroke-width=".8"/><polyline points="${line('curiosity')}" fill="none" stroke="#e0369e" stroke-width=".8"/>
+        <polyline points="${line('purpose')}" fill="none" stroke="#4b8bff" stroke-width=".8"/><polyline points="${line('energy')}" fill="none" stroke="#ff8a3d" stroke-width=".8"/></svg>
+        <div class="tags"><span class="tag" style="background:#ffe9a8">mood</span><span class="tag" style="background:#ffc2e6">curiosity</span><span class="tag" style="background:#c6dcff">purpose</span><span class="tag" style="background:#ffd3b0">energy</span></div>` : '') +
+      '<h3>Numbers</h3>' + Object.entries(groups).map(([g, rows]) => `<details id="grp-${g}"${openGroups.has(g) ? ' open' : ''}><summary style="font-weight:900;cursor:pointer;text-transform:capitalize">${g} (${rows.length})</summary>
+        <div style="display:grid;grid-template-columns:1fr 110px;gap:6px 10px;padding:8px 0;align-items:center">${rows.map(([k, v]) => `<span style="font-size:14px">${esc(k.split('.').slice(1).join('.'))}</span><input data-param="${esc(k)}" ${typeof v === 'number' ? 'type="number" step="any"' : ''} value="${esc(v)}" style="border:2px solid var(--ink);border-radius:8px;padding:3px 7px;background:#fff;width:100%">`).join('')}</div></details>`).join('') +
+      ((s.param_changes || []).length ? '<h3>Changes</h3>' + s.param_changes.map(c => `<div class="row"><b>✏️</b><span>${esc(c.key)}: ${esc(c.old)} → ${esc(c.new)}<small>${when(c.ts)} · ${esc(c.who)}</small></span></div>`).join('') : '') +
+      ((s.gateway_log || []).length ? '<h3>Gateway log</h3>' + s.gateway_log.slice(0, 20).map(g => `<div class="row"><b>${g.ok ? '✅' : '🚫'}</b><span>${esc(g.kind)}: ${esc(short(g.query_or_url, 70))}<small>${when(g.ts)} · cargo ${g.window_id} · ${g.bytes} bytes · ${esc(g.who)}${g.note ? ' · ' + esc(g.note) : ''}</small></span></div>`).join('') : '');
+  } else if (name === 'thoughts') {
+    const rows = DIARY.filter(e => diaryFilter === 'all' || DIARY_GROUP[e.kind] === diaryFilter).slice(-150).reverse();
+    el.innerHTML = `<div class="dfil" id="dfil">${DIARY_FILTERS.map(([k, n]) => `<button data-f="${k}" class="${k === diaryFilter ? 'on' : ''}">${n}</button>`).join('')}</div>` +
+      (rows.map(e => `<div class="dy${e.kind === 'thought' ? ' th' : ''}${e.kind === 'build' ? ' g-make' : ''}" id="ev-${e.id}"><header><i>${e.icon}</i><b>${DIARY_LABEL[e.kind] || e.kind}</b><time>${when(e.ts)}</time></header><p>${esc(e.text)}</p></div>`).join('') || '<div class="dy"><p>Nothing here yet.</p></div>');
+  }
+}
+const openGroups = new Set(['feelings']);
+let diaryFilter = 'all';
+const DIARY_FILTERS = [['all', 'everything'], ['think', 'thinking'], ['cargo', 'cargo'], ['make', 'making'], ['people', 'visitors']];
+const DIARY_GROUP = { thought: 'think', answer: 'think', note: 'think', journal: 'think', cargo: 'cargo', vault: 'cargo', build: 'make', postcard: 'people', reply: 'people', ask: 'people' };
+const DIARY_LABEL = { thought: 'wondered', answer: 'worked out', note: 'wrote a note', journal: 'journal', cargo: 'cargo', vault: 'vault', build: 'Foundry', postcard: 'postcard', reply: 'answered', ask: 'asked', sleep: 'sleep', system: '' };
+
+// the panels' own controls (they are re-rendered, so clicks are caught on the drawer)
+let answering = null;
+$('drawer').addEventListener('click', async e => {
+  const t = e.target.closest('button'); if (!t) return;
+  try {
+    if (t.dataset.f) { diaryFilter = t.dataset.f; renderTab('thoughts'); }
+    else if (t.dataset.preset !== undefined) { await api('/api/preset', { name: t.dataset.preset }); toast('🎛️', `Preset: ${t.dataset.preset || 'plain'}`); }
+    else if (t.id === 'pauseBtn') await api('/api/control', { paused: !S.mind.paused });
+    else if (t.dataset.answer) { answering = +t.dataset.answer; const a = S.asks.find(x => x.id === answering); $('askIn').placeholder = 'Answer: ' + short(a?.text || '', 60); $('askIn').focus(); }
+  } catch (err) { toast('⚠️', err.message); }
+});
+$('drawer').addEventListener('change', async e => {
+  const t = e.target;
+  try {
+    if (t.dataset.param) { const r = await api('/api/param', { key: t.dataset.param, value: t.value }); toast('✏️', `${r.key} = ${r.value}`); }
+    else if (t.id === 'speed') await api('/api/control', { speed: +t.value });
+    else if (t.id === 'cardName') localStorage.setItem('honk.name', t.value.trim());
+  } catch (err) { toast('⚠️', err.message); }
+});
+$('drawer').addEventListener('toggle', e => { const g = e.target.id?.replace('grp-', ''); if (g) e.target.open ? openGroups.add(g) : openGroups.delete(g); }, true);
+$('mindPill').onclick = async () => { if (S) try { await api('/api/control', { paused: !S.mind.paused }); } catch (err) { toast('⚠️', err.message); } };
+$('eraseAll').onclick = async () => {
+  if (!confirm('Erase everything Honk has?\n\nHis questions, memories, vault, journal, builds and postcards will be deleted. This cannot be undone.')) return;
+  try { await api('/api/reset', { confirm: 'erase everything' }); location.reload(); } catch (err) { alert('Could not erase: ' + err.message); }
+};
+
+// postcards: the field at the bottom
+$('ask').addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = $('askIn').value.trim(); if (!text) return;
+  $('askGo').classList.add('busy');
+  try {
+    await api('/api/postcard', { name: localStorage.getItem('honk.name') || '', text, ...(answering ? { answers: answering } : {}) });
+    addAlert({ kind: 'you', icon: '✉️', title: 'Your postcard is on its way', text });
+    $('askIn').value = ''; answering = null; $('askIn').placeholder = 'Write Honk a postcard…';
+  } catch (err) { $('ask').classList.add('shake'); setTimeout(() => $('ask').classList.remove('shake'), 450); toast('✉️', err.message); }
+  $('askGo').classList.remove('busy');
+});
+
+// little red counters on his buttons when something new is in there since you last looked
+const BADGES = { questions: () => (S.questions.counts.answered || 0) + (S.questions.counts.built || 0), cargo: () => S.cargo.window, vault: () => S.vault.items.reduce((n, i) => Math.max(n, i.id), 0),
+  made: () => S.builds.reduce((n, b) => Math.max(n, b.id), 0), journal: () => S.journal.reduce((n, j) => Math.max(n, j.id), 0), postcards: () => S.postcards.filter(p => p.reply).length + S.asks.length };
+let seen = {}; try { seen = JSON.parse(localStorage.getItem('honk.seen2') || '{}') || {}; } catch {}
+function markSeen(tab) { if (!BADGES[tab] || !S) return; seen[tab] = BADGES[tab](); try { localStorage.setItem('honk.seen2', JSON.stringify(seen)); } catch {} updateBadges(); }
+function updateBadges() {
+  for (const tab in BADGES) {
+    const n = BADGES[tab](); if (seen[tab] == null || n < seen[tab]) seen[tab] = n;
+    if (openTab === tab && n !== seen[tab]) { seen[tab] = n; try { localStorage.setItem('honk.seen2', JSON.stringify(seen)); } catch {} }
+    const btn = document.querySelector(`.dbtn[data-tab="${tab}"]`), b = btn.querySelector('.badge'), k = Math.max(0, n - seen[tab]), txt = k ? String(Math.min(k, 99)) : '';
+    if (b.textContent !== txt) { b.textContent = txt; if (k) { b.classList.remove('pop'); b.offsetWidth; b.classList.add('pop'); btn.classList.remove('wiggle'); btn.offsetWidth; btn.classList.add('wiggle'); } }
+  }
+}
+
+// Honk's card: how he feels, the question on his mind and the ones behind it, and the hatch
+const MOODS = { asleep: ['😴', '#c9c2ff'], tired: ['🥱', '#d9d4ff'], delighted: ['😄', '#ffd23f'], touched: ['🥹', '#ffb0c8'], stung: ['😣', '#ffb3b3'], proud: ['😊', '#ffd23f'], frustrated: ['😤', '#ffb36b'],
+  intrigued: ['🤔', '#ff8fd8'], purposeful: ['🧭', '#7ff0c6'], restless: ['😟', '#ffb36b'], worn: ['😮‍💨', '#d9d4ff'], wistful: ['🥲', '#9fd8ff'], excited: ['🤩', '#ffd23f'], content: ['🙂', '#7ff0c6'],
+  uneasy: ['😟', '#ffb36b'], low: ['😕', '#9fd8ff'], curious: ['🤔', '#ff8fd8'], calm: ['😌', '#7ff0c6'] };
+let shownMood = '', shownFlow = '';
+function updateHud() {
+  const s = S, h = s.honk, [face, col] = MOODS[h.emotion] || MOODS.content;
+  if (h.emotion !== shownMood) { shownMood = h.emotion; $('mood').textContent = face; $('mood').classList.remove('boing'); $('mood').offsetWidth; $('mood').classList.add('boing'); $('moodWord').textContent = h.emotion; $('honkCard').style.setProperty('--fc', col); }
+  $('face').classList.toggle('asleep', h.asleep);
+  $('statusText').textContent = 'Honk is ' + h.doing.text;
+  FEELS.forEach(([k, n]) => { const v = feelPct(k, h.feel[k]); $('d-' + k).style.width = v + '%'; $('dv-' + k).title = `${n}: ${h.feel[k].toFixed(2)}${h.urgent.includes(k) ? ' (urgent)' : ''}`; });
+  const q = s.questions.open, [ic, word] = HATCH_WORD[s.cargo.state];
+  const html = (q.length ? `<div class="gl">❔<span>${esc(q[0].text)}</span><small>${q.length} open</small></div><ol>${q.slice(1, 4).map(x => `<li><b>${x.needs_web ? '🌐' : '·'}</b><span>${esc(x.text)}</span></li>`).join('')}</ol>` : '<div class="none">No question on his mind right now.</div>') +
+    `<div class="act">${ic} ${word}${s.cargo.state !== 'closed' ? ` · ${Math.ceil(s.cargo.minutes_left)} min left` : ''} · ${s.cargo.ledger} cargos left</div>`;
+  if (html !== shownFlow) { const fresh = shownFlow && q[0] && !shownFlow.includes(esc(q[0].text)); shownFlow = html; $('flow').innerHTML = html; if (fresh) { $('flow').classList.remove('new'); $('flow').offsetWidth; $('flow').classList.add('new'); } }
+  const m = s.mind, P = $('mindPill');
+  P.textContent = m.paused ? '⏸️ paused' : m.status?.ready ? `🧠 ${short(m.model.replace(/^\w+:/, ''), 22)}` : '🧠 mind offline';
+  P.title = m.paused ? 'Honk is paused. Click to let him go on.' : m.status?.ready ? 'Honk is thinking with this model. Click to pause him.' : (m.status?.note || 'The model runner is not answering') + '. Honk waits: without his model he skips every thought.';
+  const tod = s.clock.tod, sunUp = tod > 0.25 && tod < 0.75;
+  $('clock').textContent = `${sunUp ? '☀️' : '🌍'} ${clockOf(tod * 1440)} · Day ${s.clock.day} · ${ic}`;
+  $('bIcon').textContent = h.doing.icon; $('bubble').classList.toggle('busy', !h.asleep && honkPose !== 'walk');
+  updateBadges();
+}
+
+// --- hover: information only. Right-click toggles every label off and on.
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let hover = null, mx = 0, my = 0, needPick = false, labelsOn = true, hintTimer = 0;
+function setHint(text) { $('hint').textContent = text || `WASD to fly · Q/E down and up · drag to look · scroll to zoom · right-click turns labels ${labelsOn ? 'off' : 'on'}`; }
+function pick() {
+  needPick = false;
+  let found = null;
+  if (labelsOn) {
+    ndc.set(mx / innerWidth * 2 - 1, -(my / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+    for (const hit of ray.intersectObjects(statics, true)) { let o = hit.object; while (o && !o.userData.ent) o = o.parent; if (o) { found = o.userData.ent; break; } }
+  }
+  if (found?.kind === 'ground') found = null;
+  hover = found; const tip = $('tip');
+  if (!found) { tip.hidden = true; return; }
+  const d = found.kind === 'honk' ? (S ? 'Honk is ' + S.honk.doing.text : '') : found.desc, was = tip.hidden; tip.hidden = false;
+  tip.innerHTML = `${esc(found.name)}${d ? `<small>${esc(d)}</small>` : ''}`;
+  tip.style.left = Math.min(mx + 16, innerWidth - 290) + 'px'; tip.style.top = (my + 18) + 'px';
+  if (was) { tip.style.animation = 'none'; tip.offsetWidth; tip.style.animation = ''; }
+}
+const cv = renderer.domElement;
+cv.addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; needPick = true; });
+cv.addEventListener('pointerdown', e => {
+  if (e.button !== 2) return;
+  labelsOn = !labelsOn; needPick = true;
+  clearTimeout(hintTimer); setHint(labelsOn ? 'Labels on · right-click to turn them off' : 'Labels off · right-click to turn them on'); hintTimer = setTimeout(() => setHint(), 2500);
+});
+cv.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('pointerleave', () => { hover = null; $('tip').hidden = true; });
+setHint();
+
+// --- keys: WASD moves the camera, Q/E down/up, Shift faster. Enter jumps to the postcard field, Escape leaves it or closes the open panel.
+const keys = new Set(), MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'q', 'e']);
+let shiftHeld = false;
+function setFollow(on) { follow = on; $('follow').classList.toggle('on', on); }
+$('follow').onclick = () => setFollow(!follow);
+addEventListener('keydown', e => {
+  shiftHeld = e.shiftKey;
+  if (e.key === 'Escape') { if (document.activeElement === $('askIn')) $('askIn').blur(); else if (openTab) showTab(openTab); return; }
+  if (e.target.closest?.('input, select, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 'Enter') { $('askIn').focus(); e.preventDefault(); return; }
+  const k = e.key.toLowerCase();
+  if (MOVE_KEYS.has(k)) { keys.add(k); if (follow) setFollow(false); e.preventDefault(); }
+});
+addEventListener('keyup', e => { shiftHeld = e.shiftKey; keys.delete(e.key.toLowerCase()); });
+addEventListener('blur', () => { keys.clear(); shiftHeld = false; });
+$('askIn').addEventListener('focus', () => keys.clear());
+const fwd = new THREE.Vector3(), right = new THREE.Vector3(), mv = new THREE.Vector3();
+function moveCamera(dt) {
+  if (!keys.size) return;
+  fwd.subVectors(controls.target, camera.position); fwd.y = 0; fwd.normalize(); right.set(-fwd.z, 0, fwd.x);
+  mv.set(0, 0, 0);
+  if (keys.has('w')) mv.add(fwd); if (keys.has('s')) mv.sub(fwd);
+  if (keys.has('d')) mv.add(right); if (keys.has('a')) mv.sub(right);
+  if (keys.has('e')) mv.y += 1; if (keys.has('q')) mv.y -= 1;
+  if (!mv.lengthSq()) return;
+  const speed = THREE.MathUtils.clamp(camera.position.distanceTo(controls.target) * 0.8, 8, 60) * (shiftHeld ? 2.5 : 1);
+  mv.normalize().multiplyScalar(speed * dt);
+  camera.position.add(mv); controls.target.add(mv);
+  const floor = ground(camera.position.x, camera.position.z) + 1.2; if (camera.position.y < floor) camera.position.y = floor;
+}
+
+// ================================================================ MAIN LOOP
+const sunDir = new THREE.Vector3(), tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
+const clock = new THREE.Clock();
+let frame = 0, simT = 0, tod = 0.4;
+function tick() {
+  const dt = Math.min(clock.getDelta(), 0.1), t = (simT += dt); frame++;
+  U.uTime.value = t;
+  if (S) tod += ((S.clock.tod - tod + 1.5) % 1 - 0.5) * Math.min(1, dt * 0.5);   // ease toward the server's time of day
+  tod = (tod + 1) % 1;
+
+  // light: the Sun by day; when it is down, the Earth lights the dust
+  sampleKeys(tod);
+  const a = (tod - 0.25) * Math.PI * 2;
+  sunDir.set(Math.cos(a), Math.sin(a), 0.35).normalize();
+  const sunUp = smooth(-0.04, 0.1, sunDir.y), keyDir = sunDir.y > 0.02 ? sunDir : EARTH_DIR;
+  key.color.copy(cur.sun); key.intensity = cur.sunI;
+  key.target.position.copy(controls.target); key.position.copy(controls.target).addScaledVector(keyDir, 80);
+  hemi.color.copy(cur.hs); hemi.groundColor.copy(cur.hg); hemi.intensity = cur.hI;
+  SKY.uSunCol.value.set(1, 0.96, 0.88).multiplyScalar(1.3 * sunUp); SKY.uSunDir.value.copy(sunDir); SKY.uStars.value = cur.stars;
+  U.uSun.value.copy(cur.sun).multiplyScalar(cur.sunI * Math.max(keyDir.y, 0));
+  U.uAmb.value.copy(cur.hs).multiplyScalar(cur.hI);
+  U.uLight.value.copy(U.uSun.value).add(U.uAmb.value).multiplyScalar(1 / Math.PI);
+  const night = 1 - sunUp; U.uNight.value = night;
+  const lum = Math.min(1, 0.12 + U.uLight.value.r * 0.3 + U.uLight.value.g * 0.6);
+  flowerMats.forEach(m => m.color.setScalar(lum));
+  DIM.forEach(d => d.m.color.copy(d.base).multiplyScalar(lum));
+  GLOWS.forEach(m => m.color.copy(m.userData.base).multiplyScalar(0.6 + night * 3.4));
+  if (SEC.hatch?.door) { const open = S && ['open', 'closing'].includes(S.cargo.state), blink = S?.cargo.state === 'closing' ? 0.5 + 0.5 * Math.sin(t * 6) : 1;
+    SEC.hatch.door.color.set(PAL.mint).multiplyScalar(open ? (2.2 + 0.4 * Math.sin(t * 2)) * blink : S?.cargo.state === 'arrived' ? 0.6 : 0.08); }
+  sky.position.copy(camera.position);
+
+  stepTweens(dt); stepParticles(dt);
+  if (sectionsReady) stepHonk(dt);
+  poseHonk(dt, t);
+
+  // camera
+  moveCamera(dt);
+  if (follow) { tmp.copy(honk.position); tmp2.copy(tmp).sub(controls.target).multiplyScalar(Math.min(1, dt * 3)); controls.target.add(tmp2); camera.position.add(tmp2); }
+  controls.update();
+  if (needPick || (hover && frame % 20 === 0)) pick();
+
+  // god rays + post
+  tmp.copy(camera.position).addScaledVector(sunDir, 100).project(camera);
+  const onScreen = tmp.z < 1 ? smooth(1.6, 1.0, Math.max(Math.abs(tmp.x), Math.abs(tmp.y))) : 0;
+  post.uniforms.sunUV.value.set((tmp.x + 1) / 2, (tmp.y + 1) / 2);
+  post.uniforms.sunVis.value = onScreen * sunUp;
+  post.uniforms.rays.value = cur.rays * +$('ray').value;
+  post.uniforms.rayColor.value.copy(cur.sun);
+  post.uniforms.exposure.value = cur.exp;
+  const tn = tmp2.set(cur.tint.r, cur.tint.g, cur.tint.b); post.uniforms.tint.value.set(Math.pow(tn.x, 1 / 2.2), Math.pow(tn.y, 1 / 2.2), Math.pow(tn.z, 1 / 2.2));
+  renderer.setRenderTarget(rt); renderer.render(scene, camera);
+  renderer.setRenderTarget(null); renderer.render(postScene, postCam);
+
+  // the little sign over his head
+  const [bx, by, bok] = toScreen(honk.position.x, honk.position.y + (pn.asleep ? 1.8 : 2.5), honk.position.z), B = $('bubble');
+  B.style.display = bok ? 'grid' : 'none'; B.style.left = bx + 'px'; B.style.top = (by - 6) + 'px';
+}
+renderer.setAnimationLoop(tick);
+poll();
+
+// for looking around from the console
+window.world = { get S() { return S; }, SEC, BUILT, honk, camera, controls, ground, main, setTime: h => { tod = h / 24; }, alert: addAlert, DIARY };
+</script>
+</body>
+</html>

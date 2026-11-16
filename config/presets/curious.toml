@@ -1,0 +1,8 @@
+# Curious: questions pile up fast and learning feels very good.
+[feelings]
+curiosity_rate = 0.006
+curiosity_relief = 1.5
+purpose_base = 0.45
+[mind]
+wonder_below = 10
+backlog_cap = 30

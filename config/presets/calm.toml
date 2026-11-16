@@ -1,0 +1,7 @@
+# Calm: slow to stir, quick to settle.
+[feelings]
+valence_base = 0.3
+arousal_tau = 30
+negative_gain = 1.4
+curiosity_rate = 0.003
+weight_cap = 0.35

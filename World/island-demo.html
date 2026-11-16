@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pino's Island</title>
+<title>Honk's Island</title>
 <style>
   :root { --cream: #fff4d6; --ink: #1a1040; --shadow: rgba(26,16,64,.35); }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1a2a; font-family: ui-rounded, "Nunito", system-ui, sans-serif; color: var(--ink); }
@@ -36,7 +36,7 @@
 <div id="clock" class="card">☀️ 10:00 · Day</div>
 <div id="drives" class="card"></div>
 <div id="bubble" class="card">🌸</div>
-<div id="status" class="card"><span class="dot"></span><span id="statusText">Pino is deciding what to do next</span></div>
+<div id="status" class="card"><span class="dot"></span><span id="statusText">Honk is deciding what to do next</span></div>
 
 <details id="panel" class="card">
   <summary>World settings ▾</summary>
@@ -312,7 +312,7 @@ const fireflyMat = new THREE.ShaderMaterial({
     }`,
 });
 
-// ---------------------------------------------------------------- recipes (Pino-style)
+// ---------------------------------------------------------------- recipes (Honk-style)
 const PAL = {
   navy: '#1a1040', indigo: '#2d2a8c', violet: '#4b47d6', lavender: '#c9c2ff', white: '#ffffff',
   yellow: '#ffd23f', wood: '#e9c79a', roof: '#e0369e', plum: '#7a2a8f',
@@ -704,8 +704,8 @@ const $ = id => document.getElementById(id);
 const DRIVES = [['Fullness', '#b6f04a'], ['Energy', '#ff8a3d'], ['Wonder', '#e0369e'], ['Joy', '#ffd23f'], ['Calm', '#1fb5a6']];
 $('drives').innerHTML = DRIVES.map(([n, c], i) => `<div class="drive"><b style="background:${c}"></b>${n}<div class="bar"><i id="d${i}" style="background:${c}"></i></div></div>`).join('');
 const ACTIVITIES = [
-  ['🌸', 'Pino is counting flowers'], ['🌊', 'Pino is watching the waterfall'], ['🐱', 'Pino is thinking about drawing a cat'],
-  ['🚂', 'Pino wonders if trains could fly between islands'], ['🎹', 'Pino hums a tune he made up'], ['☁️', 'Pino is looking at the clouds'],
+  ['🌸', 'Honk is counting flowers'], ['🌊', 'Honk is watching the waterfall'], ['🐱', 'Honk is thinking about drawing a cat'],
+  ['🚂', 'Honk wonders if trains could fly between islands'], ['🎹', 'Honk hums a tune he made up'], ['☁️', 'Honk is looking at the clouds'],
 ];
 let tod = 10 / 24, dayLength = 180, lastAct = -1;
 const sync = () => {
@@ -730,7 +730,7 @@ $('win').oninput = e => { U.uWind.value = +e.target.value; sync(); };
 $('rot').onchange = e => { controls.autoRotate = e.target.checked; };
 sync();
 
-// ---------------------------------------------------------------- Pino's little routine (stand-in for the real decision loop)
+// ---------------------------------------------------------------- Honk's little routine (stand-in for the real decision loop)
 const pino = { target: new THREE.Vector3(), wait: 1, asleep: false, act: 0 };
 const kr = rng(99);
 function pickTarget() {
@@ -776,7 +776,7 @@ renderer.setAnimationLoop(() => {
   satellites.forEach(s => { s.group.position.y = s.baseY + Math.sin(t * 0.25 + s.phase) * 0.6; });
   sky.position.copy(camera.position);
 
-  // Pino: wanders by day, walks home at dusk, sleeps at night
+  // Honk: wanders by day, walks home at dusk, sleeps at night
   const wantsSleep = night > 0.6;
   if (wantsSleep && !pino.asleep) pino.target.copy(door);
   if (!wantsSleep && pino.asleep) { pino.asleep = false; kiwi.visible = true; kiwi.position.copy(door); pickTarget(); }
@@ -790,7 +790,7 @@ renderer.setAnimationLoop(() => {
     } else if (wantsSleep) { pino.asleep = true; kiwi.visible = false; }
     else if ((pino.wait -= dt) <= 0) pickTarget();
   }
-  const [icon, text] = pino.asleep ? ['💤', 'Pino is asleep'] : wantsSleep ? ['🌙', 'Pino is heading home for the night'] : ACTIVITIES[pino.act];
+  const [icon, text] = pino.asleep ? ['💤', 'Honk is asleep'] : wantsSleep ? ['🌙', 'Honk is heading home for the night'] : ACTIVITIES[pino.act];
   $('bubble').textContent = icon; $('statusText').textContent = text;
   DRIVES.forEach((_, i) => { $('d' + i).style.width = (pino.asleep && i === 1 ? 40 + 50 * night : 55 + 35 * Math.sin(t * 0.2 + i * 1.7)) + '%'; });
   const ct = clockText(tod); $('clock').textContent = `${ct.icon} ${ct.time} · ${ct.phase}`;

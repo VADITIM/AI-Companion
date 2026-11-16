@@ -1,0 +1,78 @@
+# The Moon's sections: the single source of truth for where things go. x, z are world units; the surface is about 60 across.
+# builds = false: nothing may be built there. capacity: builds the section holds. things: what belongs there (shown to him).
+
+[[section]]
+id = "hatch"
+name = "the Hatch"
+theme = "the landing pad where cargo arrives and the door to the old world opens"
+x = 0.0
+z = 14.0
+r = 5.0
+builds = false
+capacity = 0
+
+[[section]]
+id = "vault"
+name = "the Vault"
+theme = "shelves for what is kept of humanity"
+x = -15.0
+z = 2.0
+r = 6.5
+builds = true
+capacity = 8
+things = "shelves, cases, markers and labels for kept things; nothing else"
+kind = "shelf"
+
+[[section]]
+id = "garden"
+name = "the Garden of Made Things"
+theme = "an open field for whatever he loves to make"
+x = 13.0
+z = -3.0
+r = 9.0
+builds = true
+capacity = 24
+things = "anything he wants to make: sculptures, models, towers, instruments, little scenes"
+
+[[section]]
+id = "memorial"
+name = "the Quiet Ring"
+theme = "a still place for what was lost and should be remembered"
+x = -6.0
+z = -16.0
+r = 6.0
+builds = true
+capacity = 10
+things = "monuments, cairns, lanterns and quiet things that remember; nothing loud or playful"
+
+[[section]]
+id = "lookout"
+name = "the Lookout"
+theme = "a rise with a clear view of the Earth, where he thinks"
+x = 16.0
+z = 15.0
+r = 4.5
+builds = true
+capacity = 4
+things = "things for looking and thinking: a seat, a telescope, a signpost"
+
+[[section]]
+id = "postbox"
+name = "the Postbox"
+theme = "where postcards from the descendants arrive and his answers leave"
+x = -12.0
+z = 14.0
+r = 3.5
+builds = false
+capacity = 0
+
+[[section]]
+id = "nest"
+name = "the Nest"
+theme = "his own corner, where he sleeps and writes his journal"
+x = 2.0
+z = -4.0
+r = 3.5
+builds = true
+capacity = 3
+things = "things that make his corner cosy: a bed, a lamp, a blanket box"

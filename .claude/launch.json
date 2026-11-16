@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "honk",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["src/honk/server.py"],
+      "port": 8765
+    },
+    {
+      "name": "honk-test",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["src/honk/server.py", "--test", "--speed", "30", "--port", "8766"],
+      "port": 8766
+    },
+    {
+      "name": "alife",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["src/alife/main.py"],
+      "port": 8770
+    }
+  ]
+}

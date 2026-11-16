@@ -1,0 +1,9 @@
+# Restless: easily excited, hungry for news, moods swing wider.
+[feelings]
+arousal_base = 0.15
+arousal_tau = 70
+curiosity_rate = 0.007
+curiosity_base = 0.35
+negative_gain = 1.9
+[mind]
+wonder_below = 9

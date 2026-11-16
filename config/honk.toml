@@ -1,0 +1,126 @@
+# Every number Honk runs on. The tuning panel (Mind tab) edits these live and logs each change in param_changes.
+# A preset in config/presets/ overrides any of them.
+
+[sim]
+speed = 1.0              # simulated minutes per real minute
+tick_s = 2.0             # real seconds between loop ticks
+day_min = 1440           # one Moon "day" for his clock and journal
+
+[mind]
+provider = "ollama"      # "ollama" | "openai" (llama.cpp server, LM Studio) | "stub" (no model: scripted answers for tests)
+url = "http://127.0.0.1:11434"
+model = "qwen2.5:7b"     # planned: Ternary-Bonsai-2-9B-Q2_0 on llama.cpp (provider "openai", url http://127.0.0.1:8080)
+timeout_s = 120
+min_interval_s = 6       # real seconds between two model calls
+temp_min = 0.6           # sampling temperature at low arousal
+temp_max = 1.1           # ... and at high arousal
+backlog_cap = 25         # open questions; above this the weakest are parked
+depth_cap = 3            # follow-up chain length (visitor questions are exempt)
+lockout_k = 6            # cycles before the same question or build target may come up again
+dedupe = 0.6             # word similarity above which a new question is merged into an old one
+wonder_below = 6         # he wonders when fewer open questions than this are waiting
+wonder_gap_min = 12      # at least this many minutes between two rounds of wondering (news cuts it short)
+max_tries = 3            # a question that failed this often is parked
+
+[cargo]
+gap_min = 30             # minutes between a window closing and the next cargo
+gap_max = 120
+gap_from = "close"
+window_min = 60          # how long the hatch is open
+closing_min = 10         # the last minutes of the window: winding down
+arrived_max_min = 20     # unpacking never takes longer than this
+ledger = 200             # cargos left when he first wakes
+slots = 12
+slots_requests = 4
+slots_matched = 5
+slots_serendipity = 3
+
+[gateway]
+mode = "live"            # "live" | "cassette" (recorded pages in tests/cassette, nothing leaves the machine)
+searches = 15            # per window
+fetches = 30
+bytes = 5000000
+max_page = 2000000
+page_text = 6000         # characters of a page handed to the reader
+timeout_s = 15
+
+[vault]
+slots = 40               # grows by shelf_bonus for every shelf he builds
+shelf_bonus = 4
+
+[foundry]
+provider = "auto"        # "auto" (OpenRouter when a key is set, else the mind's own model) | "openrouter" | "local" | "stub"
+model = "qwen/qwen3.7-flash"
+url = "https://openrouter.ai/api/v1"
+timeout_s = 180
+per_hour = 1             # build budget
+per_day = 5
+max_parts = 40
+checks = 2               # quality checks before a build is placed
+
+[memory]
+recall = 5               # memories handed to a call
+w_recency = 1.0
+w_importance = 1.0
+w_relevance = 2.0
+w_mood = 0.4             # mood-congruent recall
+w_open_q = 0.5           # relatedness to open questions
+recency_tau_min = 2880
+keep = 1500              # memories kept in recall; older, unimportant ones fade
+
+[visitors]
+max_chars = 500
+per_hour = 6             # postcards per visitor
+answer_confidence = 0.6  # he answers from memory above this; below it he waits for the next cargo
+
+[feelings]
+# needs: level 0..1 (1 = satisfied). Awake, each drifts toward its baseline with its own time constant (minutes).
+energy_tau_awake = 900
+energy_tau_asleep = 110
+sleep_below = 0.22       # he lies down under this
+wake_above = 0.9
+connection_base = 0.35
+connection_tau = 720
+purpose_base = 0.4
+purpose_tau = 900
+curiosity_base = 0.25    # pressure he settles at when no web question is open
+curiosity_tau = 600
+curiosity_rate = 0.004   # growth of pressure per minute per interest-weighted open web question
+curiosity_relief = 1.2   # pressure taken off per unit of confidence gained
+# mood: -1..1
+valence_base = 0.25
+valence_tau = 120
+arousal_base = 0.0
+arousal_tau = 45
+negative_gain = 1.7      # bad news weighs more than good
+mood_floor = -0.6
+cap_per_hour = 0.35      # how far one source (a visitor, a feed, a failed build) may move mood in an hour
+# urgency of a need: sigmoid(k * (setpoint - level)), with hysteresis
+urgency_k = 9.0
+setpoint = 0.35
+urgent_enter = 0.7
+urgent_leave = 0.4
+# habituation
+habit_gain = 0.35
+habit_tau = 1440
+# existential weight
+weight_cap = 0.5
+weight_tau = 360
+weight_ledger = 0.35     # how much of the cap an empty ledger adds to its resting level
+weight_mood = 0.4        # how much of the weight is taken from mood
+# temperament drifts a little each sleep
+drift = 0.02
+drift_clamp = 0.15
+
+# W maps an appraisal (novelty, expectedness, mission_relevance, learning_gain, warmth, effort, agency), each -1..1,
+# to changes in needs and mood.
+[feelings.W]
+# A change is a share of the room left (0.3 on a need at 0.5 lifts it to 0.65), so nothing overshoots.
+#              nov    exp    mis    learn  warm   eff    agency
+energy     = [ 0.00,  0.00,  0.00,  0.00,  0.00, -0.03,  0.00]
+curiosity  = [ 0.05, -0.10,  0.00, -1.00,  0.00,  0.00,  0.00]   # pressure: falls when he learns, rises when the world surprises him badly
+connection = [ 0.00,  0.00,  0.00,  0.00,  0.45,  0.00,  0.00]
+purpose    = [ 0.00,  0.00,  0.25,  0.10,  0.05,  0.00,  0.25]
+valence    = [ 0.06,  0.03,  0.10,  0.22,  0.30, -0.04,  0.18]
+arousal    = [ 0.35, -0.20,  0.10,  0.10,  0.10,  0.15,  0.05]
+weight     = [ 0.00,  0.00, -0.10, -0.05,  0.00,  0.00, -0.15]

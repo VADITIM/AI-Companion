@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pino Look Demo</title>
+<title>Honk Look Demo</title>
 <style>
   :root {
     --cream: #fff4d6; --ink: #1a1040; --violet: #4b47d6; --shadow: rgba(26,16,64,.35);
@@ -33,7 +33,7 @@
 <body>
 <div id="drives"></div>
 <div id="bubble">🍩</div>
-<div id="status" class="pill"><span class="dot"></span><span id="statusText">Pino is deciding what to do next</span></div>
+<div id="status" class="pill"><span class="dot"></span><span id="statusText">Honk is deciding what to do next</span></div>
 
 <details id="panel">
   <summary>Look settings ▾</summary>
@@ -127,7 +127,7 @@ function build(recipe) {
   return g;
 }
 
-// ---------- recipes Pino could have written ----------
+// ---------- recipes Honk could have written ----------
 const KIWI = { name: 'kiwi', parts: [
   { shape: 'sphere', pos: [0, 0.65, 0], scale: [0.5, 0.55, 0.42], color: 'violet' },
   { shape: 'sphere', pos: [0.32, 1.05, 0], scale: [0.26, 0.26, 0.24], color: 'violet' },
@@ -335,7 +335,7 @@ addEventListener('resize', () => {
 const DRIVES = [['Fullness', '#b6f04a'], ['Energy', '#ff8a3d'], ['Wonder', '#e0369e'], ['Joy', '#ffd23f'], ['Calm', '#1fb5a6']];
 const drivesEl = document.getElementById('drives');
 drivesEl.innerHTML = DRIVES.map(([n, c], i) => `<div class="drive"><b style="background:${c}"></b>${n}<div class="bar"><i id="d${i}" style="background:${c}"></i></div></div>`).join('');
-const STATUS = ['Pino is deciding what to do next', 'Pino is watching the trains', 'Pino wants that donut', 'Pino is thinking about drawing a cat', 'Pino hums a tune he made up'];
+const STATUS = ['Honk is deciding what to do next', 'Honk is watching the trains', 'Honk wants that donut', 'Honk is thinking about drawing a cat', 'Honk hums a tune he made up'];
 const THOUGHTS = ['🍩', '🚂', '🐱', '🎹', '🖍️'];
 const statusText = document.getElementById('statusText'), bubble = document.getElementById('bubble');
 let mood = 0;
